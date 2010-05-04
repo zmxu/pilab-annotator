@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>849</width>
-    <height>558</height>
+    <width>902</width>
+    <height>579</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -40,6 +40,12 @@
       <width>591</width>
       <height>511</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
     </property>
     <property name="mouseTracking">
      <bool>false</bool>
@@ -79,8 +85,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>849</width>
-     <height>25</height>
+     <width>902</width>
+     <height>23</height>
     </rect>
    </property>
    <property name="font">
@@ -311,7 +317,21 @@
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_4"/>
+   <widget class="QWidget" name="dockWidgetContents_4">
+    <widget class="QLabel" name="zoomImage">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>10</y>
+       <width>81</width>
+       <height>111</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QDockWidget" name="navigationBox">
@@ -338,8 +358,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>141</width>
-       <height>101</height>
+       <width>151</width>
+       <height>122</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
@@ -445,6 +465,13 @@
       </item>
       <item>
        <widget class="QComboBox" name="imageComboBox"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="indexLabel">
+        <property name="text">
+         <string>(0 / 0)</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
