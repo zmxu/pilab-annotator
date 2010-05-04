@@ -28,29 +28,39 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.rectClickButton.hide()
         self.ui.rectDragButton.hide()
 
+        self.ui.zoomImage.paint = QtGui.QPainter()
         self.ui.image.paint = QtGui.QPainter()
         self.ui.image.pen = QtGui.QPen(QtCore.Qt.red)
+        self.ui.coord = QtGui.QLabel()
+        self.ui.statusBar.addPermanentWidget(self.ui.coord)
         
-        self.ui.image.__class__.paintEvent = self.imagePaintEvent
-        self.ui.image.__class__.mousePressEvent = self.imageMousePressEvent
-        self.ui.image.__class__.mouseReleaseEvent = self.imageMouseReleaseEvent
-        #self.ui.image.__class__.mouseMoveEvent = self.imageMouseMoveEvent
+        self.ui.zoomImage.paintEvent = self.zoomImagePaintEvent
+        self.ui.image.paintEvent = self.imagePaintEvent
+        self.ui.image.mousePressEvent = self.imageMousePressEvent
+        self.ui.image.mouseReleaseEvent = self.imageMouseReleaseEvent
+        self.ui.image.mouseMoveEvent = self.imageMouseMoveEvent
 
-    #def imageMouseMoveEvent(self, event):
-        #if self.ui.image.pixmap():
-            #self.coordinates.setText("(%d, %d)" % (event.pos().x(), event.pos().y()))
+    def imageMouseMoveEvent(self, event):
+        if self.ui.image.pixmap():
+            self.ui.coord.setText("(%d, %d)" % (event.pos().x(), event.pos().y()))
 
+    def zoomImagePaintEvent(self, event):
+        if self.ui.zoomImage.pixmap():
+            self.ui.zoomImage.paint.begin(self.ui.zoomImage)
+            self.ui.zoomImage.paint.drawImage(self.ui.zoomImage.rect(), QtGui.QImage(self.ui.zoomImage.pixmap()))
+            self.ui.zoomImage.paint.end()
+        
     def imagePaintEvent(self, event):
         global points, currentIndex
-        self.ui.image.pen.setWidth(4)
-        self.ui.image.paint.begin(self.ui.image)
-        self.ui.image.paint.setPen(self.ui.image.pen)
         if self.ui.image.pixmap():
+            self.ui.image.pen.setWidth(4)
+            self.ui.image.paint.begin(self.ui.image)
+            self.ui.image.paint.setPen(self.ui.image.pen)
             self.ui.image.paint.drawImage(self.ui.image.rect(), QtGui.QImage(self.ui.image.pixmap()))
             if len(points[currentIndex]) > 0:
                 for (i,j) in points[currentIndex]:
                     self.ui.image.paint.drawPoint(i,j)
-        self.ui.image.paint.end()
+            self.ui.image.paint.end()
 
     def imageMousePressEvent(self, event):
         global points, modes, currentTool, currentIndex
@@ -137,10 +147,16 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.image.setPixmap(pixmap)
         self.ui.image.setFixedSize(pixmap.size())
 
+        zoomedPixmap = pixmap.scaled (self.ui.image.size().width()*3, self.ui.image.size().height()*3, QtCore.Qt.KeepAspectRatioByExpanding)
+        myPixmap = zoomedPixmap.copy(100,100, self.ui.zoomImage.size().width(), self.ui.zoomImage.size().height())
+        self.ui.zoomImage.setPixmap(myPixmap)
+        self.ui.zoomImage.setFixedSize(myPixmap.size())
+
     def changeImage(self, text):
         global path, currentIndex
         self.loadImage("%s/%s" % (path, text))
         currentIndex = self.ui.imageComboBox.currentIndex()
+        self.ui.indexLabel.setText("(%d / %d)" % (currentIndex+1, self.ui.imageComboBox.count()))
 
     def handleDotButton(self, check):
         global currentTool

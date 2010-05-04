@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'annotator.ui'
 #
-# Created: Thu Apr  8 01:05:48 2010
-#      by: PyQt4 UI code generator 4.6
+# Created: Tue May  4 21:52:12 2010
+#      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_mainWindow(object):
     def setupUi(self, mainWindow):
         mainWindow.setObjectName("mainWindow")
-        mainWindow.resize(849, 558)
+        mainWindow.resize(902, 579)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(6)
@@ -27,6 +27,11 @@ class Ui_mainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.scrollArea = QtGui.QScrollArea(self.centralwidget)
         self.scrollArea.setGeometry(QtCore.QRect(0, 0, 591, 511))
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.scrollArea.sizePolicy().hasHeightForWidth())
+        self.scrollArea.setSizePolicy(sizePolicy)
         self.scrollArea.setMouseTracking(False)
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
@@ -38,12 +43,13 @@ class Ui_mainWindow(object):
         self.image = QtGui.QLabel(self.scrollAreaWidgetContents)
         self.image.setCursor(QtCore.Qt.CrossCursor)
         self.image.setMouseTracking(True)
+        self.image.setText("")
         self.image.setObjectName("image")
         self.horizontalLayout_4.addWidget(self.image)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         mainWindow.setCentralWidget(self.centralwidget)
         self.menuBar = QtGui.QMenuBar(mainWindow)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 849, 25))
+        self.menuBar.setGeometry(QtCore.QRect(0, 0, 902, 23))
         font = QtGui.QFont()
         font.setFamily("Bitstream Charter")
         font.setPointSize(10)
@@ -127,6 +133,10 @@ class Ui_mainWindow(object):
         self.zoomBox.setObjectName("zoomBox")
         self.dockWidgetContents_4 = QtGui.QWidget()
         self.dockWidgetContents_4.setObjectName("dockWidgetContents_4")
+        self.zoomImage = QtGui.QLabel(self.dockWidgetContents_4)
+        self.zoomImage.setGeometry(QtCore.QRect(0, 10, 81, 111))
+        self.zoomImage.setText("")
+        self.zoomImage.setObjectName("zoomImage")
         self.zoomBox.setWidget(self.dockWidgetContents_4)
         mainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.zoomBox)
         self.statusBar = QtGui.QStatusBar(mainWindow)
@@ -141,7 +151,7 @@ class Ui_mainWindow(object):
         self.dockWidgetContents_6 = QtGui.QWidget()
         self.dockWidgetContents_6.setObjectName("dockWidgetContents_6")
         self.verticalLayoutWidget = QtGui.QWidget(self.dockWidgetContents_6)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(0, 0, 141, 101))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(0, 0, 151, 122))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtGui.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -176,6 +186,9 @@ class Ui_mainWindow(object):
         self.imageComboBox = QtGui.QComboBox(self.verticalLayoutWidget)
         self.imageComboBox.setObjectName("imageComboBox")
         self.verticalLayout.addWidget(self.imageComboBox)
+        self.indexLabel = QtGui.QLabel(self.verticalLayoutWidget)
+        self.indexLabel.setObjectName("indexLabel")
+        self.verticalLayout.addWidget(self.indexLabel)
         self.navigationBox.setWidget(self.dockWidgetContents_6)
         mainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.navigationBox)
         self.openAction = QtGui.QAction(mainWindow)
@@ -227,6 +240,7 @@ class Ui_mainWindow(object):
         self.plusTenButton.setText(QtGui.QApplication.translate("mainWindow", ">>", None, QtGui.QApplication.UnicodeUTF8))
         self.lastButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Last image", None, QtGui.QApplication.UnicodeUTF8))
         self.lastButton.setText(QtGui.QApplication.translate("mainWindow", ">|", None, QtGui.QApplication.UnicodeUTF8))
+        self.indexLabel.setText(QtGui.QApplication.translate("mainWindow", "(0 / 0)", None, QtGui.QApplication.UnicodeUTF8))
         self.openAction.setText(QtGui.QApplication.translate("mainWindow", "Open", None, QtGui.QApplication.UnicodeUTF8))
         self.openAction.setStatusTip(QtGui.QApplication.translate("mainWindow", "Open a directory containing images", None, QtGui.QApplication.UnicodeUTF8))
         self.openAction.setShortcut(QtGui.QApplication.translate("mainWindow", "Ctrl+O", None, QtGui.QApplication.UnicodeUTF8))
