@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'annotator.ui'
 #
-# Created: Tue May  4 21:52:12 2010
+# Created: Wed May  5 00:08:30 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -60,7 +60,7 @@ class Ui_mainWindow(object):
         mainWindow.setMenuBar(self.menuBar)
         self.toolBox = QtGui.QDockWidget(mainWindow)
         self.toolBox.setEnabled(True)
-        self.toolBox.setMinimumSize(QtCore.QSize(87, 41))
+        self.toolBox.setMinimumSize(QtCore.QSize(87, 70))
         font = QtGui.QFont()
         font.setFamily("Sans Serif")
         font.setPointSize(9)
@@ -88,7 +88,7 @@ class Ui_mainWindow(object):
         self.toolBox.setWidget(self.dockWidgetContents_2)
         mainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.toolBox)
         self.optionBox = QtGui.QDockWidget(mainWindow)
-        self.optionBox.setMinimumSize(QtCore.QSize(85, 41))
+        self.optionBox.setMinimumSize(QtCore.QSize(85, 150))
         font = QtGui.QFont()
         font.setFamily("Sans Serif")
         font.setPointSize(9)
@@ -97,6 +97,7 @@ class Ui_mainWindow(object):
         self.dockWidgetContents_3 = QtGui.QWidget()
         self.dockWidgetContents_3.setObjectName("dockWidgetContents_3")
         self.dotClickButton = QtGui.QPushButton(self.dockWidgetContents_3)
+        self.dotClickButton.setEnabled(False)
         self.dotClickButton.setGeometry(QtCore.QRect(0, 10, 41, 28))
         self.dotClickButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.dotClickButton.setCheckable(True)
@@ -126,6 +127,7 @@ class Ui_mainWindow(object):
         self.optionBox.setWidget(self.dockWidgetContents_3)
         mainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.optionBox)
         self.zoomBox = QtGui.QDockWidget(mainWindow)
+        self.zoomBox.setMinimumSize(QtCore.QSize(150, 170))
         font = QtGui.QFont()
         font.setFamily("Sans Serif")
         font.setPointSize(9)
@@ -133,10 +135,12 @@ class Ui_mainWindow(object):
         self.zoomBox.setObjectName("zoomBox")
         self.dockWidgetContents_4 = QtGui.QWidget()
         self.dockWidgetContents_4.setObjectName("dockWidgetContents_4")
+        self.horizontalLayout_5 = QtGui.QHBoxLayout(self.dockWidgetContents_4)
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.zoomImage = QtGui.QLabel(self.dockWidgetContents_4)
-        self.zoomImage.setGeometry(QtCore.QRect(0, 10, 81, 111))
         self.zoomImage.setText("")
         self.zoomImage.setObjectName("zoomImage")
+        self.horizontalLayout_5.addWidget(self.zoomImage)
         self.zoomBox.setWidget(self.dockWidgetContents_4)
         mainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.zoomBox)
         self.statusBar = QtGui.QStatusBar(mainWindow)
@@ -151,7 +155,7 @@ class Ui_mainWindow(object):
         self.dockWidgetContents_6 = QtGui.QWidget()
         self.dockWidgetContents_6.setObjectName("dockWidgetContents_6")
         self.verticalLayoutWidget = QtGui.QWidget(self.dockWidgetContents_6)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(0, 0, 151, 122))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(0, 0, 141, 122))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtGui.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setObjectName("verticalLayout")

@@ -11,6 +11,7 @@ currentTool = ""                                #string to describe current tool
 modes = {"dot":"click", "rectangle":"", "":""}  #modes for tools
 currentIndex = 0                    #index of current image
 points = []                                     #point coordinates for images
+zoomAmount = 3
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -20,6 +21,7 @@ class MainWindow(QtGui.QMainWindow):
         # Set up the user interface from Designer.
         self.ui = Ui_mainWindow()
         self.ui.setupUi(self)
+        self.setCentralWidget(self.ui.scrollArea)
         self.connectSignals()
 
         self.ui.dotClickButton.hide()
@@ -43,6 +45,7 @@ class MainWindow(QtGui.QMainWindow):
     def imageMouseMoveEvent(self, event):
         if self.ui.image.pixmap():
             self.ui.coord.setText("(%d, %d)" % (event.pos().x(), event.pos().y()))
+            self.updateZoomedImage(event.pos().x(), event.pos().y())
 
     def zoomImagePaintEvent(self, event):
         if self.ui.zoomImage.pixmap():
@@ -64,7 +67,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def imageMousePressEvent(self, event):
         global points, modes, currentTool, currentIndex
-        if currentTool == "dot":
+        if self.ui.image.pixmap() and currentTool == "dot":
             if modes["dot"] == "click":
                 points[currentIndex].append((event.pos().x(),event.pos().y()))
                 self.ui.image.repaint()
@@ -77,7 +80,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def imageMouseReleaseEvent(self, event):
         global points, modes, currentTool, currentIndex
-        if currentTool == "dot":
+        if self.ui.image.pixmap() and currentTool == "dot":
             if modes["dot"] == "drag" and self.dragIsActive:
                 points[currentIndex].remove(self.pointToDrag)
                 points[currentIndex].append((event.pos().x(),event.pos().y()))
@@ -87,8 +90,6 @@ class MainWindow(QtGui.QMainWindow):
     def connectSignals(self):
         self.connect(self.ui.exitAction, QtCore.SIGNAL("triggered()"), self, QtCore.SLOT("close()"))
         self.connect(self.ui.openAction, QtCore.SIGNAL("triggered()"), self.openImageDirectory)
-        self.connect(self.ui.dotButton, QtCore.SIGNAL("toggled(bool)"), self.showDotOptions)
-        self.connect(self.ui.rectangleButton, QtCore.SIGNAL("toggled(bool)"), self.showRectOptions)
         self.connect(self.ui.imageComboBox, QtCore.SIGNAL("currentIndexChanged(QString)"), self.changeImage)
         self.connect(self.ui.prevButton, QtCore.SIGNAL("clicked()"), self.previousImage)
         self.connect(self.ui.nextButton, QtCore.SIGNAL("clicked()"), self.nextImage)
@@ -142,13 +143,31 @@ class MainWindow(QtGui.QMainWindow):
                 self.ui.imageComboBox.addItems(imageFiles)
                 self.loadImage("%s/%s" % (path, self.ui.imageComboBox.currentText()))
 
+    def updateZoomedImage(self, x, y):
+        width = self.ui.zoomImage.width()
+        height = width = self.ui.zoomImage.height()
+        x = zoomAmount*x - width / 2
+        y = zoomAmount*y - height / 2
+        if x < 0:
+            x=0
+        elif x+width > self.zoomedPixmap.width():
+            x = self.zoomedPixmap.width() - width
+        if y < 0:
+            y=0
+        elif y+height > self.zoomedPixmap.height():
+            y = self.zoomedPixmap.height() - height
+        myPixmap = self.zoomedPixmap.copy(x, y, width, height)
+        self.ui.zoomImage.setPixmap(myPixmap)
+        self.ui.zoomImage.setFixedSize(myPixmap.size())
+
     def loadImage(self, path):
+        global zoomAmount
         pixmap = QtGui.QPixmap(path)
         self.ui.image.setPixmap(pixmap)
         self.ui.image.setFixedSize(pixmap.size())
 
-        zoomedPixmap = pixmap.scaled (self.ui.image.size().width()*3, self.ui.image.size().height()*3, QtCore.Qt.KeepAspectRatioByExpanding)
-        myPixmap = zoomedPixmap.copy(100,100, self.ui.zoomImage.size().width(), self.ui.zoomImage.size().height())
+        self.zoomedPixmap = pixmap.scaled (self.ui.image.width()*zoomAmount, self.ui.image.height()*zoomAmount, QtCore.Qt.KeepAspectRatio)
+        myPixmap = self.zoomedPixmap.copy(0,0, self.ui.zoomImage.width(), self.ui.zoomImage.height())
         self.ui.zoomImage.setPixmap(myPixmap)
         self.ui.zoomImage.setFixedSize(myPixmap.size())
 
@@ -161,16 +180,20 @@ class MainWindow(QtGui.QMainWindow):
     def handleDotButton(self, check):
         global currentTool
         if check:
-            self.ui.dotButton.setEnabled(not check)
-            self.ui.rectangleButton.setEnabled(check)
-            self.ui.rectangleButton.setChecked(not check)
+            self.ui.dotButton.setEnabled(False)
+            self.ui.rectangleButton.setEnabled(True)
+            self.ui.rectangleButton.setChecked(False)
             currentTool = "dot"
+            self.showDotOptions()
             
     def handleRectButton(self, check):
+        global currentTool
         if check:
-            self.ui.rectangleButton.setEnabled(not check)
-            self.ui.dotButton.setEnabled(check)
-            self.ui.dotButton.setChecked(not check)
+            self.ui.rectangleButton.setEnabled(False)
+            self.ui.dotButton.setEnabled(True)
+            self.ui.dotButton.setChecked(False)
+            currentTool = "rect"
+            self.showRectOptions()
 
     def handleDotUndoButton(self):
         global points, currentIndex
@@ -182,17 +205,17 @@ class MainWindow(QtGui.QMainWindow):
         if check:
             global modes
             modes["dot"] = "click"
-            self.ui.dotClickButton.setEnabled(not check)
-            self.ui.dotDragButton.setEnabled(check)
-            self.ui.dotDragButton.setChecked(not check)
+            self.ui.dotClickButton.setEnabled(False)
+            self.ui.dotDragButton.setEnabled(True)
+            self.ui.dotDragButton.setChecked(False)
             
     def handleDotDragButton(self, check):
         if check:
             global modes
             modes["dot"] = "drag"
-            self.ui.dotDragButton.setEnabled(not check)
-            self.ui.dotClickButton.setEnabled(check)
-            self.ui.dotClickButton.setChecked(not check)
+            self.ui.dotDragButton.setEnabled(False)
+            self.ui.dotClickButton.setEnabled(True)
+            self.ui.dotClickButton.setChecked(False)
 
     def showDotOptions(self):
         self.ui.dotClickButton.show()
