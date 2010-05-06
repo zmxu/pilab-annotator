@@ -11,7 +11,9 @@ currentTool = ""                                #string to describe current tool
 modes = {"dot":"click", "rectangle":"", "":""}  #modes for tools
 currentIndex = 0                    #index of current image
 points = []                                     #point coordinates for images
-zoomAmount = 3
+zoomPoints = []                            # point coordinates for the zoomed image
+zoomAmount = 3                          # the image is zoomed "zoomAmount" times
+pointWidth = 4                              # width of the red points
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -31,6 +33,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.rectDragButton.hide()
 
         self.ui.zoomImage.paint = QtGui.QPainter()
+        self.ui.zoomImage.pen = QtGui.QPen(QtCore.Qt.red)
         self.ui.image.paint = QtGui.QPainter()
         self.ui.image.pen = QtGui.QPen(QtCore.Qt.red)
         self.ui.coord = QtGui.QLabel()
@@ -43,20 +46,44 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.image.mouseMoveEvent = self.imageMouseMoveEvent
 
     def imageMouseMoveEvent(self, event):
+        global zoomPoints, points, currentIndex
         if self.ui.image.pixmap():
+            width = self.ui.zoomImage.width()
+            height = width = self.ui.zoomImage.height()
+            x = zoomAmount*event.pos().x() - width / 2
+            y = zoomAmount*event.pos().y() - height / 2
+            #elif x+width > self.zoomedPixmap.width():
+            #    x = self.zoomedPixmap.width() - width
+            #elif y+height > self.zoomedPixmap.height():
+            #    y = self.zoomedPixmap.height() - height
             self.ui.coord.setText("(%d, %d)" % (event.pos().x(), event.pos().y()))
+            if len(points[currentIndex]) > 0:
+                del zoomPoints[:]
+                for (i,j) in points[currentIndex]:
+                    if x<0 or y<0:
+                        if abs(i-event.pos().x()) <= self.ui.zoomImage.width()/(zoomAmount) and abs(j-event.pos().y()) <= self.ui.zoomImage.height()/(zoomAmount):
+                            zoomPoints.append( (i*zoomAmount, j*zoomAmount) )
+                    else:
+                        if abs(i-event.pos().x()) <= self.ui.zoomImage.width()/(2*zoomAmount) and abs(j-event.pos().y()) <= self.ui.zoomImage.height()/(2*zoomAmount):
+                            zoomPoints.append( (zoomAmount*(i-event.pos().x())+self.ui.zoomImage.width()/2, zoomAmount*(j-event.pos().y())+self.ui.zoomImage.height()/2) )
             self.updateZoomedImage(event.pos().x(), event.pos().y())
 
     def zoomImagePaintEvent(self, event):
+        global zoomAmount, zoomPoints, pointWidth
         if self.ui.zoomImage.pixmap():
+            self.ui.zoomImage.pen.setWidth(pointWidth*zoomAmount)
             self.ui.zoomImage.paint.begin(self.ui.zoomImage)
+            self.ui.zoomImage.paint.setPen(self.ui.zoomImage.pen)
             self.ui.zoomImage.paint.drawImage(self.ui.zoomImage.rect(), QtGui.QImage(self.ui.zoomImage.pixmap()))
+            if len(zoomPoints) > 0:
+                for (i,j) in zoomPoints:
+                    self.ui.zoomImage.paint.drawPoint(i,j)
             self.ui.zoomImage.paint.end()
         
     def imagePaintEvent(self, event):
         global points, currentIndex
         if self.ui.image.pixmap():
-            self.ui.image.pen.setWidth(4)
+            self.ui.image.pen.setWidth(pointWidth)
             self.ui.image.paint.begin(self.ui.image)
             self.ui.image.paint.setPen(self.ui.image.pen)
             self.ui.image.paint.drawImage(self.ui.image.rect(), QtGui.QImage(self.ui.image.pixmap()))
@@ -74,7 +101,7 @@ class MainWindow(QtGui.QMainWindow):
             elif modes["dot"] == "drag":
                 self.dragIsActive = False
                 for (i,j) in points[currentIndex]:
-                    if abs(i-event.pos().x()) <= 3 and abs(j-event.pos().y()) <= 3:
+                    if abs(i-event.pos().x()) <= pointWidth and abs(j-event.pos().y()) <= pointWidth:
                         self.pointToDrag = (i,j)
                         self.dragIsActive = True
 
