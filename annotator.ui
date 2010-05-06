@@ -143,8 +143,21 @@
         <property name="focusPolicy">
          <enum>Qt::NoFocus</enum>
         </property>
+        <property name="toolTip">
+         <string>Point tool</string>
+        </property>
         <property name="text">
-         <string>dot</string>
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>graphics/ps_icons/Dodge.png</normaloff>graphics/ps_icons/Dodge.png</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>30</width>
+          <height>23</height>
+         </size>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -156,8 +169,21 @@
         <property name="focusPolicy">
          <enum>Qt::NoFocus</enum>
         </property>
+        <property name="toolTip">
+         <string>Rectangle tool</string>
+        </property>
         <property name="text">
-         <string>rect</string>
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>graphics/ps_icons/Rectangle.png</normaloff>graphics/ps_icons/Rectangle.png</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>30</width>
+          <height>23</height>
+         </size>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -216,8 +242,21 @@
      <property name="focusPolicy">
       <enum>Qt::NoFocus</enum>
      </property>
+     <property name="toolTip">
+      <string>Draw</string>
+     </property>
      <property name="text">
-      <string>click</string>
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>graphics/ps_icons/Pencil.png</normaloff>graphics/ps_icons/Pencil.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>30</width>
+       <height>23</height>
+      </size>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -238,8 +277,21 @@
      <property name="focusPolicy">
       <enum>Qt::NoFocus</enum>
      </property>
+     <property name="toolTip">
+      <string>Drag</string>
+     </property>
      <property name="text">
-      <string>drag</string>
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>graphics/ps_icons/Move.png</normaloff>graphics/ps_icons/Move.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>30</width>
+       <height>23</height>
+      </size>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -257,8 +309,21 @@
      <property name="focusPolicy">
       <enum>Qt::NoFocus</enum>
      </property>
+     <property name="toolTip">
+      <string>Undo</string>
+     </property>
      <property name="text">
-      <string>undo</string>
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>graphics/ps_icons/Eraser.png</normaloff>graphics/ps_icons/Eraser.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>30</width>
+       <height>23</height>
+      </size>
      </property>
      <property name="checkable">
       <bool>false</bool>
@@ -276,8 +341,21 @@
      <property name="focusPolicy">
       <enum>Qt::NoFocus</enum>
      </property>
+     <property name="toolTip">
+      <string>Draw</string>
+     </property>
      <property name="text">
-      <string>click2</string>
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>graphics/ps_icons/RectangularMarquee.png</normaloff>graphics/ps_icons/RectangularMarquee.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>30</width>
+       <height>23</height>
+      </size>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -298,8 +376,21 @@
      <property name="focusPolicy">
       <enum>Qt::NoFocus</enum>
      </property>
+     <property name="toolTip">
+      <string>Drag</string>
+     </property>
      <property name="text">
-      <string>drag2</string>
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>graphics/ps_icons/Move.png</normaloff>graphics/ps_icons/Move.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>30</width>
+       <height>23</height>
+      </size>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -364,7 +455,7 @@
        <x>0</x>
        <y>0</y>
        <width>141</width>
-       <height>122</height>
+       <height>121</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
