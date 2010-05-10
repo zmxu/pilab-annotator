@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>902</width>
+    <width>904</width>
     <height>579</height>
    </rect>
   </property>
@@ -85,7 +85,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>902</width>
+     <width>904</width>
      <height>23</height>
     </rect>
    </property>
@@ -103,7 +103,23 @@
     <addaction name="separator"/>
     <addaction name="exitAction"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <widget class="QMenu" name="menuWindows">
+     <property name="title">
+      <string>Windows</string>
+     </property>
+     <addaction name="toolboxAction"/>
+     <addaction name="optionsAction"/>
+     <addaction name="zoomAction"/>
+     <addaction name="navigationAction"/>
+    </widget>
+    <addaction name="menuWindows"/>
+   </widget>
    <addaction name="fileMenu"/>
+   <addaction name="menuView"/>
   </widget>
   <widget class="QDockWidget" name="toolBox">
    <property name="enabled">
@@ -325,6 +341,9 @@
        <height>23</height>
       </size>
      </property>
+     <property name="shortcut">
+      <string>Ctrl+Z</string>
+     </property>
      <property name="checkable">
       <bool>false</bool>
      </property>
@@ -455,7 +474,7 @@
        <x>0</x>
        <y>0</y>
        <width>141</width>
-       <height>121</height>
+       <height>122</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
@@ -470,7 +489,7 @@
            <string>-1</string>
           </property>
           <property name="shortcut">
-           <string>Ctrl+P</string>
+           <string>Left</string>
           </property>
          </widget>
         </item>
@@ -483,7 +502,7 @@
            <string>+1</string>
           </property>
           <property name="shortcut">
-           <string>Ctrl+N</string>
+           <string>Right</string>
           </property>
          </widget>
         </item>
@@ -512,6 +531,9 @@
           <property name="text">
            <string>|&lt;</string>
           </property>
+          <property name="shortcut">
+           <string>Home</string>
+          </property>
          </widget>
         </item>
         <item>
@@ -521,6 +543,9 @@
           </property>
           <property name="text">
            <string>&lt;&lt;</string>
+          </property>
+          <property name="shortcut">
+           <string>PgUp</string>
           </property>
          </widget>
         </item>
@@ -532,6 +557,9 @@
           <property name="text">
            <string>&gt;&gt;</string>
           </property>
+          <property name="shortcut">
+           <string>PgDown</string>
+          </property>
          </widget>
         </item>
         <item>
@@ -541,6 +569,9 @@
           </property>
           <property name="text">
            <string>&gt;|</string>
+          </property>
+          <property name="shortcut">
+           <string>End</string>
           </property>
          </widget>
         </item>
@@ -606,6 +637,50 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="toolboxAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Toolbox</string>
+   </property>
+  </action>
+  <action name="optionsAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Options</string>
+   </property>
+  </action>
+  <action name="zoomAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Zoom</string>
+   </property>
+  </action>
+  <action name="navigationAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Navigation</string>
    </property>
   </action>
  </widget>
