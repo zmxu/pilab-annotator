@@ -28,6 +28,9 @@
     <pointsize>8</pointsize>
    </font>
   </property>
+  <property name="focusPolicy">
+   <enum>Qt::StrongFocus</enum>
+  </property>
   <property name="windowTitle">
    <string>Annotator</string>
   </property>
@@ -103,11 +106,11 @@
     <addaction name="separator"/>
     <addaction name="exitAction"/>
    </widget>
-   <widget class="QMenu" name="menuView">
+   <widget class="QMenu" name="viewMenu">
     <property name="title">
      <string>View</string>
     </property>
-    <widget class="QMenu" name="menuWindows">
+    <widget class="QMenu" name="windowsMenu">
      <property name="title">
       <string>Windows</string>
      </property>
@@ -116,10 +119,11 @@
      <addaction name="zoomAction"/>
      <addaction name="navigationAction"/>
     </widget>
-    <addaction name="menuWindows"/>
+    <addaction name="windowsMenu"/>
+    <addaction name="indicesAction"/>
    </widget>
    <addaction name="fileMenu"/>
-   <addaction name="menuView"/>
+   <addaction name="viewMenu"/>
   </widget>
   <widget class="QDockWidget" name="toolBox">
    <property name="enabled">
@@ -681,6 +685,17 @@
    </property>
    <property name="text">
     <string>Navigation</string>
+   </property>
+  </action>
+  <action name="indicesAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Indices</string>
+   </property>
+   <property name="shortcut">
+    <string>I</string>
    </property>
   </action>
  </widget>
