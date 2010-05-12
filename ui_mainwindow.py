@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'annotator.ui'
 #
-# Created: Mon May 10 23:35:07 2010
+# Created: Wed May 12 20:18:23 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -23,6 +23,7 @@ class Ui_mainWindow(object):
         font.setFamily("Sans Serif")
         font.setPointSize(8)
         mainWindow.setFont(font)
+        mainWindow.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.centralwidget = QtGui.QWidget(mainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.scrollArea = QtGui.QScrollArea(self.centralwidget)
@@ -57,10 +58,10 @@ class Ui_mainWindow(object):
         self.menuBar.setObjectName("menuBar")
         self.fileMenu = QtGui.QMenu(self.menuBar)
         self.fileMenu.setObjectName("fileMenu")
-        self.menuView = QtGui.QMenu(self.menuBar)
-        self.menuView.setObjectName("menuView")
-        self.menuWindows = QtGui.QMenu(self.menuView)
-        self.menuWindows.setObjectName("menuWindows")
+        self.viewMenu = QtGui.QMenu(self.menuBar)
+        self.viewMenu.setObjectName("viewMenu")
+        self.windowsMenu = QtGui.QMenu(self.viewMenu)
+        self.windowsMenu.setObjectName("windowsMenu")
         mainWindow.setMenuBar(self.menuBar)
         self.toolBox = QtGui.QDockWidget(mainWindow)
         self.toolBox.setEnabled(True)
@@ -261,16 +262,20 @@ class Ui_mainWindow(object):
         self.navigationAction.setCheckable(True)
         self.navigationAction.setChecked(True)
         self.navigationAction.setObjectName("navigationAction")
+        self.indicesAction = QtGui.QAction(mainWindow)
+        self.indicesAction.setCheckable(True)
+        self.indicesAction.setObjectName("indicesAction")
         self.fileMenu.addAction(self.openAction)
         self.fileMenu.addSeparator()
         self.fileMenu.addAction(self.exitAction)
-        self.menuWindows.addAction(self.toolboxAction)
-        self.menuWindows.addAction(self.optionsAction)
-        self.menuWindows.addAction(self.zoomAction)
-        self.menuWindows.addAction(self.navigationAction)
-        self.menuView.addAction(self.menuWindows.menuAction())
+        self.windowsMenu.addAction(self.toolboxAction)
+        self.windowsMenu.addAction(self.optionsAction)
+        self.windowsMenu.addAction(self.zoomAction)
+        self.windowsMenu.addAction(self.navigationAction)
+        self.viewMenu.addAction(self.windowsMenu.menuAction())
+        self.viewMenu.addAction(self.indicesAction)
         self.menuBar.addAction(self.fileMenu.menuAction())
-        self.menuBar.addAction(self.menuView.menuAction())
+        self.menuBar.addAction(self.viewMenu.menuAction())
 
         self.retranslateUi(mainWindow)
         QtCore.QMetaObject.connectSlotsByName(mainWindow)
@@ -278,8 +283,8 @@ class Ui_mainWindow(object):
     def retranslateUi(self, mainWindow):
         mainWindow.setWindowTitle(QtGui.QApplication.translate("mainWindow", "Annotator", None, QtGui.QApplication.UnicodeUTF8))
         self.fileMenu.setTitle(QtGui.QApplication.translate("mainWindow", "File", None, QtGui.QApplication.UnicodeUTF8))
-        self.menuView.setTitle(QtGui.QApplication.translate("mainWindow", "View", None, QtGui.QApplication.UnicodeUTF8))
-        self.menuWindows.setTitle(QtGui.QApplication.translate("mainWindow", "Windows", None, QtGui.QApplication.UnicodeUTF8))
+        self.viewMenu.setTitle(QtGui.QApplication.translate("mainWindow", "View", None, QtGui.QApplication.UnicodeUTF8))
+        self.windowsMenu.setTitle(QtGui.QApplication.translate("mainWindow", "Windows", None, QtGui.QApplication.UnicodeUTF8))
         self.toolBox.setWindowTitle(QtGui.QApplication.translate("mainWindow", "Toolbox", None, QtGui.QApplication.UnicodeUTF8))
         self.dotButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Point tool", None, QtGui.QApplication.UnicodeUTF8))
         self.rectangleButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Rectangle tool", None, QtGui.QApplication.UnicodeUTF8))
@@ -321,4 +326,6 @@ class Ui_mainWindow(object):
         self.optionsAction.setText(QtGui.QApplication.translate("mainWindow", "Options", None, QtGui.QApplication.UnicodeUTF8))
         self.zoomAction.setText(QtGui.QApplication.translate("mainWindow", "Zoom", None, QtGui.QApplication.UnicodeUTF8))
         self.navigationAction.setText(QtGui.QApplication.translate("mainWindow", "Navigation", None, QtGui.QApplication.UnicodeUTF8))
+        self.indicesAction.setText(QtGui.QApplication.translate("mainWindow", "Indices", None, QtGui.QApplication.UnicodeUTF8))
+        self.indicesAction.setShortcut(QtGui.QApplication.translate("mainWindow", "I", None, QtGui.QApplication.UnicodeUTF8))
 

@@ -8,7 +8,7 @@ from ui_mainwindow import Ui_mainWindow
 
 extensions = (".png",".jpg")                    #image file extensions to filter
 currentTool = ""                                #string to describe current tool
-modes = {"dot":"click", "rectangle":"", "":""}  #modes for tools
+modes = {"point":"click", "rectangle":"", "":""}  #modes for tools
 currentIndex = 0                    #index of current image
 points = []                                     #point coordinates for images
 zoomPoints = []                            # point coordinates for the zoomed image
@@ -16,6 +16,7 @@ zoomAmount = 3                          # the image is zoomed "zoomAmount" times
 pointWidth = 5                              # width of the red points
 penColor = QtCore.Qt.red             # pen color for points/rectangles
 warningTimeout = 10000             # time in miliseconds to show warning message
+indicesVisible = False                  # visibility of indices of points/rectangles
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -47,11 +48,28 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.coord = QtGui.QLabel()
         self.ui.statusBar.addPermanentWidget(self.ui.coord)
         
+        self.keyPressEvent = self.mainKeyPressEvent
+        self.keyReleaseEvent = self.mainKeyReleaseEvent
         self.ui.zoomImage.paintEvent = self.zoomImagePaintEvent
         self.ui.image.paintEvent = self.imagePaintEvent
         self.ui.image.mousePressEvent = self.imageMousePressEvent
         self.ui.image.mouseReleaseEvent = self.imageMouseReleaseEvent
         self.ui.image.mouseMoveEvent = self.imageMouseMoveEvent
+
+    def mainKeyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Shift and modes[currentTool]!="drag":
+            if currentTool == "point":
+                self.ui.dotDragButton.setChecked(True)
+            if currentTool == "rectangle":
+                self.ui.rectDragButton.setChecked(True)
+            modes[currentTool] = "tempDrag"
+
+    def mainKeyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Shift and modes[currentTool]=="tempDrag":
+            if currentTool == "point":
+                self.ui.dotClickButton.setChecked(True)
+            if currentTool == "rectangle":
+                self.ui.rectClickButton.setChecked(True)
 
     def imageMouseMoveEvent(self, event):
         global zoomPoints, points, currentIndex
@@ -75,6 +93,26 @@ class MainWindow(QtGui.QMainWindow):
 
             self.updateZoomedImage(event.pos().x(), event.pos().y())
 
+    def imageMousePressEvent(self, event):
+        global points, modes, currentTool, currentIndex
+        if self.ui.image.pixmap() and currentTool == "point":
+            if modes["point"] == "click":
+                points[currentIndex].append((event.pos().x(),event.pos().y()))
+                self.ui.image.repaint()
+            elif modes["point"] == "drag" or modes["point"] == "tempDrag":
+                self.dragIsActive = False
+                for (i,j) in points[currentIndex]:
+                    if abs(i-event.pos().x()) <= pointWidth and abs(j-event.pos().y()) <= pointWidth:
+                        self.pointToDrag = points[currentIndex].index((i,j))
+                        self.dragIsActive = True
+
+    def imageMouseReleaseEvent(self, event):
+        global points, modes, currentTool, currentIndex
+        if self.ui.image.pixmap() and currentTool == "point":
+            if (modes["point"] == "drag" or modes["point"] == "tempDrag") and self.dragIsActive:
+                self.ui.image.repaint()
+                self.dragIsActive = False
+
     def zoomImagePaintEvent(self, event):
         global zoomAmount, zoomPoints, pointWidth
         if self.ui.zoomImage.pixmap():
@@ -84,10 +122,12 @@ class MainWindow(QtGui.QMainWindow):
             if len(zoomPoints) > 0:
                 for (i,j) in zoomPoints:
                     self.ui.zoomImage.paint.drawPoint(i,j)
+                    if indicesVisible:
+                        self.ui.zoomImage.paint.drawText(i+10,j-10, QtCore.QString.number(zoomPoints.index((i,j))))
             self.ui.zoomImage.paint.setPen(self.ui.zoomImage.crossPen)
             self.ui.zoomImage.paint.drawLine(0, self.ui.zoomImage.height()/2, self.ui.zoomImage.width(), self.ui.zoomImage.height()/2)
             self.ui.zoomImage.paint.drawLine(self.ui.zoomImage.width()/2, 0, self.ui.zoomImage.width()/2, self.ui.zoomImage.height())
-            self.ui.zoomImage.paint.drawEllipse(self.ui.zoomImage.width()/2-25,self.ui.zoomImage.height()/2-25,50,50)
+            self.ui.zoomImage.paint.drawEllipse(self.ui.zoomImage.width()/2-15,self.ui.zoomImage.height()/2-15,30,30)
             self.ui.zoomImage.paint.end()
         
     def imagePaintEvent(self, event):
@@ -100,29 +140,9 @@ class MainWindow(QtGui.QMainWindow):
             if len(points[currentIndex]) > 0:
                 for (i,j) in points[currentIndex]:
                     self.ui.image.paint.drawPoint(i,j)
+                    if indicesVisible:
+                        self.ui.image.paint.drawText(i+4,j-4, QtCore.QString.number(points[currentIndex].index((i,j))))
             self.ui.image.paint.end()
-
-    def imageMousePressEvent(self, event):
-        global points, modes, currentTool, currentIndex
-        if self.ui.image.pixmap() and currentTool == "dot":
-            if modes["dot"] == "click":
-                points[currentIndex].append((event.pos().x(),event.pos().y()))
-                self.ui.image.repaint()
-            elif modes["dot"] == "drag":
-                self.dragIsActive = False
-                for (i,j) in points[currentIndex]:
-                    if abs(i-event.pos().x()) <= pointWidth and abs(j-event.pos().y()) <= pointWidth:
-                        self.pointToDrag = points[currentIndex].index((i,j))
-                        self.dragIsActive = True
-
-    def imageMouseReleaseEvent(self, event):
-        global points, modes, currentTool, currentIndex
-        if self.ui.image.pixmap() and currentTool == "dot":
-            if modes["dot"] == "drag" and self.dragIsActive:
-                #points[currentIndex].remove(self.pointToDrag)
-                #points[currentIndex].append((event.pos().x(),event.pos().y()))
-                self.ui.image.repaint()
-                self.dragIsActive = False
 
     def connectSignals(self):
         self.connect(self.ui.toolboxAction, QtCore.SIGNAL("triggered(bool)"), 
@@ -142,6 +162,7 @@ class MainWindow(QtGui.QMainWindow):
         self.connect(self.ui.navigationBox, QtCore.SIGNAL("visibilityChanged(bool)"), 
                              self.ui.navigationAction, QtCore.SLOT("setChecked(bool)"))
 
+        self.connect(self.ui.indicesAction, QtCore.SIGNAL("triggered(bool)"), self.showIndices)
         self.connect(self.ui.exitAction, QtCore.SIGNAL("triggered()"), self, QtCore.SLOT("close()"))
         self.connect(self.ui.openAction, QtCore.SIGNAL("triggered()"), self.openImageDirectory)
         self.connect(self.ui.imageComboBox, QtCore.SIGNAL("currentIndexChanged(QString)"), self.changeImage)
@@ -240,13 +261,18 @@ class MainWindow(QtGui.QMainWindow):
         currentIndex = self.ui.imageComboBox.currentIndex()
         self.ui.indexLabel.setText("(%d / %d)" % (currentIndex+1, self.ui.imageComboBox.count()))
 
+    def showIndices(self, check):
+        global indicesVisible
+        indicesVisible = check
+        self.ui.image.repaint()
+
     def handleDotButton(self, check):
         global currentTool
         if check:
             self.ui.dotButton.setEnabled(False)
             self.ui.rectangleButton.setEnabled(True)
             self.ui.rectangleButton.setChecked(False)
-            currentTool = "dot"
+            currentTool = "point"
             self.showDotOptions()
             
     def handleRectButton(self, check):
@@ -255,7 +281,7 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.rectangleButton.setEnabled(False)
             self.ui.dotButton.setEnabled(True)
             self.ui.dotButton.setChecked(False)
-            currentTool = "rect"
+            currentTool = "rectangle"
             self.showRectOptions()
 
     def handleDotUndoButton(self):
@@ -267,7 +293,7 @@ class MainWindow(QtGui.QMainWindow):
     def handleDotClickButton(self, check):
         if check:
             global modes
-            modes["dot"] = "click"
+            modes["point"] = "click"
             self.ui.dotClickButton.setEnabled(False)
             self.ui.dotDragButton.setEnabled(True)
             self.ui.dotDragButton.setChecked(False)
@@ -275,7 +301,7 @@ class MainWindow(QtGui.QMainWindow):
     def handleDotDragButton(self, check):
         if check:
             global modes
-            modes["dot"] = "drag"
+            modes["point"] = "drag"
             self.ui.dotDragButton.setEnabled(False)
             self.ui.dotClickButton.setEnabled(True)
             self.ui.dotClickButton.setChecked(False)
