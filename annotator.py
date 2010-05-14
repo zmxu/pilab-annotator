@@ -40,7 +40,7 @@ class MainWindow(QtGui.QMainWindow):
         if indicesVisible:
             self.ui.indicesAction.setChecked(True)
         if pointWidth % 2 == 0:
-            pointWidth = pointWidth+1
+            pointWidth += 1
 
         self.ui.zoomImage.paint = QtGui.QPainter()
         self.ui.zoomImage.pen = QtGui.QPen(penColor)
@@ -131,8 +131,11 @@ class MainWindow(QtGui.QMainWindow):
                 for (i,j) in zoomPoints:
                     self.ui.zoomImage.paint.drawPoint(i,j)
                     if indicesVisible:
-                        index = points[currentIndex].index(((i+self.left)/zoomAmount,(j+self.up)/zoomAmount))
-                        self.ui.zoomImage.paint.drawText(i+10,j-10, QtCore.QString.number(index))
+                        try:
+                            index = points[currentIndex].index(((i+self.left)/zoomAmount,(j+self.up)/zoomAmount))
+                            self.ui.zoomImage.paint.drawText(i+10,j-10, QtCore.QString.number(index))
+                        except ValueError:
+                            pass
             self.ui.zoomImage.paint.setPen(self.ui.zoomImage.crossPen)
             self.ui.zoomImage.paint.drawLine(0, self.ui.zoomImage.height()/2, self.ui.zoomImage.width(), self.ui.zoomImage.height()/2)
             self.ui.zoomImage.paint.drawLine(self.ui.zoomImage.width()/2, 0, self.ui.zoomImage.width()/2, self.ui.zoomImage.height())
@@ -267,6 +270,7 @@ class MainWindow(QtGui.QMainWindow):
         global indicesVisible
         indicesVisible = check
         self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
 
     def handleDotButton(self, check):
         global currentTool
