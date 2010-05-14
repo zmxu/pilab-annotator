@@ -21,6 +21,7 @@ indicesVisible = False                  # visibility of indices of points/rectan
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self):
+        global pointWidth
         QtGui.QMainWindow.__init__(self)
 
         # Set up the user interface from Designer.
@@ -36,6 +37,10 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.rectDragButton.hide()
 
         self.dragIsActive = False
+        if indicesVisible:
+            self.ui.indicesAction.setChecked(True)
+        if pointWidth % 2 == 0:
+            pointWidth = pointWidth+1
 
         self.ui.zoomImage.paint = QtGui.QPainter()
         self.ui.zoomImage.pen = QtGui.QPen(penColor)
@@ -45,6 +50,8 @@ class MainWindow(QtGui.QMainWindow):
 
         self.ui.image.paint = QtGui.QPainter()
         self.ui.image.pen = QtGui.QPen(penColor)
+        self.ui.coo = QtGui.QLabel()
+        self.ui.statusBar.addPermanentWidget(self.ui.coo)
         self.ui.coord = QtGui.QLabel()
         self.ui.statusBar.addPermanentWidget(self.ui.coord)
         
@@ -79,17 +86,17 @@ class MainWindow(QtGui.QMainWindow):
         if self.ui.image.pixmap():
             width = self.ui.zoomImage.width()
             height = width = self.ui.zoomImage.height()
-            x = zoomAmount*event.pos().x() - width / 2
-            y = zoomAmount*event.pos().y() - height / 2
+
+            self.left, self.up = self.calculateZoomBorders(event.pos().x(), event.pos().y())
   
             self.ui.coord.setText("(%d, %d)" % (event.pos().x(), event.pos().y()))
             if len(points[currentIndex]) > 0:
                 del zoomPoints[:]
                 for (i,j) in points[currentIndex]:
-                    if abs(i-event.pos().x()) <= self.ui.zoomImage.width()/(2*zoomAmount) and abs(j-event.pos().y()) <= self.ui.zoomImage.height()/(2*zoomAmount):
-                        posX = zoomAmount*(i-event.pos().x())+self.ui.zoomImage.width()/2
-                        posY =  zoomAmount*(j-event.pos().y())+self.ui.zoomImage.height()/2
-                        zoomPoints.append( (posX, posY) )
+                    newX = zoomAmount * i - self.left
+                    newY = zoomAmount * j - self.up
+                    if 0 <= newX <= width and 0 <= newY <= height:
+                        zoomPoints.append((newX, newY))
 
             self.updateZoomedImage(event.pos().x(), event.pos().y())
 
@@ -99,6 +106,7 @@ class MainWindow(QtGui.QMainWindow):
             if modes["point"] == "click":
                 points[currentIndex].append((event.pos().x(),event.pos().y()))
                 self.ui.image.repaint()
+                self.ui.zoomImage.repaint()
             elif modes["point"] == "drag" or modes["point"] == "tempDrag":
                 self.dragIsActive = False
                 for (i,j) in points[currentIndex]:
@@ -123,7 +131,8 @@ class MainWindow(QtGui.QMainWindow):
                 for (i,j) in zoomPoints:
                     self.ui.zoomImage.paint.drawPoint(i,j)
                     if indicesVisible:
-                        self.ui.zoomImage.paint.drawText(i+10,j-10, QtCore.QString.number(zoomPoints.index((i,j))))
+                        index = points[currentIndex].index(((i+self.left)/zoomAmount,(j+self.up)/zoomAmount))
+                        self.ui.zoomImage.paint.drawText(i+10,j-10, QtCore.QString.number(index))
             self.ui.zoomImage.paint.setPen(self.ui.zoomImage.crossPen)
             self.ui.zoomImage.paint.drawLine(0, self.ui.zoomImage.height()/2, self.ui.zoomImage.width(), self.ui.zoomImage.height()/2)
             self.ui.zoomImage.paint.drawLine(self.ui.zoomImage.width()/2, 0, self.ui.zoomImage.width()/2, self.ui.zoomImage.height())
@@ -211,7 +220,6 @@ class MainWindow(QtGui.QMainWindow):
             path = unicode(QtGui.QFileDialog.getExistingDirectory(self, "Open directory", "/home"))
         if path:
             try:
-                self.setWindowTitle("Annotator - " + path)
                 allFiles = os.listdir(path)
                 imageFiles = sorted([x for x in allFiles if os.path.splitext(x)[-1] in extensions])        
                 self.ui.imageComboBox.clear()
@@ -222,24 +230,17 @@ class MainWindow(QtGui.QMainWindow):
                         points.append([])
                     self.ui.imageComboBox.addItems(imageFiles)
                     self.loadImage("%s/%s" % (path, self.ui.imageComboBox.currentText()))
+                    self.setWindowTitle("%s (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
                 else:
                     self.ui.statusBar.showMessage("No image found in the directory.", warningTimeout)
+                    self.setWindowTitle("pilab-annotator")
             except OSError as (errorNo, errorMessage):
                 self.ui.statusBar.showMessage(errorMessage, warningTimeout)
 
     def updateZoomedImage(self, x, y):
         width = self.ui.zoomImage.width()
-        height = width = self.ui.zoomImage.height()
-        x = zoomAmount*x - width / 2
-        y = zoomAmount*y - height / 2
-        if x < 0:
-            x=0
-        elif x+width > self.zoomedPixmap.width():
-            x = self.zoomedPixmap.width() - width
-        if y < 0:
-            y=0
-        elif y+height > self.zoomedPixmap.height():
-            y = self.zoomedPixmap.height() - height
+        height =  width = self.ui.zoomImage.height()
+        x,y = self.calculateZoomBorders(x,y)
         myPixmap = self.zoomedPixmap.copy(x, y, width, height)
         self.ui.zoomImage.setPixmap(myPixmap)
         self.ui.zoomImage.setFixedSize(myPixmap.size())
@@ -258,6 +259,7 @@ class MainWindow(QtGui.QMainWindow):
     def changeImage(self, text):
         global path, currentIndex
         self.loadImage("%s/%s" % (path, text))
+        self.setWindowTitle("%s (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
         currentIndex = self.ui.imageComboBox.currentIndex()
         self.ui.indexLabel.setText("(%d / %d)" % (currentIndex+1, self.ui.imageComboBox.count()))
 
@@ -318,6 +320,23 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.dotClickButton.hide()
         self.ui.dotDragButton.hide()
         self.ui.dotUndoButton.hide()
+
+    def calculateZoomBorders(self, mouseX, mouseY):
+        left = mouseX * zoomAmount  - self.ui.zoomImage.width()/2
+        up = mouseY * zoomAmount - self.ui.zoomImage.height()/2
+        if left<0:
+            left = 0
+        elif left + self.ui.zoomImage.width() > self.zoomedPixmap.width():
+            left = self.zoomedPixmap.width() - self.ui.zoomImage.width()
+        if up<0:
+            up = 0
+        elif up + self.ui.zoomImage.height() > self.zoomedPixmap.height():
+            up = self.zoomedPixmap.height() - self.ui.zoomImage.height()
+        
+        return (left, up)
+
+    #def coordsNormalToZoom(self, x, y):
+        
 
 
 app = QtGui.QApplication(sys.argv)
