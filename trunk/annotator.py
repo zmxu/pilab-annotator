@@ -146,9 +146,14 @@ class MainWindow(QtGui.QMainWindow):
                     self.ui.zoomImage.paint.drawPoint(i,j)
                     if indicesVisible:
                         try:
-                            index = points[currentIndex].index(((i+self.left)/zoomAmount,(j+self.up)/zoomAmount))
-                            
-                            self.ui.zoomImage.paint.drawText(i+10,j-10, QtCore.QString.number(index))
+                            index = -1
+                            for k, p in enumerate(points[currentIndex]):
+                                dx = p[0] - (i+self.left)/zoomAmount
+                                dy = p[1] - (j+self.up)/zoomAmount 
+                                if abs(dx) < 0.1 and abs(dy) < 0.1:
+                                    index = k
+                            if index > -1:
+                                self.ui.zoomImage.paint.drawText(i+10,j-10, QtCore.QString.number(index))
                         except ValueError:
                             pass
                             
@@ -313,6 +318,8 @@ class MainWindow(QtGui.QMainWindow):
         self.setWindowTitle("%s (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
         currentIndex = self.ui.imageComboBox.currentIndex()
         self.ui.indexLabel.setText("(%d / %d)" % (currentIndex+1, self.ui.imageComboBox.count()))
+        self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
 
     def showIndices(self, check):
         global indicesVisible
