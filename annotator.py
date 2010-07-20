@@ -13,7 +13,7 @@ currentIndex = 0                                    # index of current image
 points = []                                         # point coordinates for images
 zoomPoints = []                                     # point coordinates for the zoomed image
 zoomAmount = 3                                      # the image is zoomed "zoomAmount" times
-pointWidth = 5                                      # width of the red points (is to be odd)
+pointWidth = 3                                      # width of the red points (is to be odd)
 penColor = QtCore.Qt.red                            # pen color for points/rectangles
 warningTimeout = 10000                              # time in miliseconds to show warning message
 indicesVisible = True                               # visibility of indices of points/rectangles
@@ -141,6 +141,7 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.zoomImage.paint.begin(self.ui.zoomImage)
             self.ui.zoomImage.paint.setPen(self.ui.zoomImage.pen)
             self.ui.zoomImage.paint.drawImage(self.ui.zoomImage.rect(), QtGui.QImage(self.ui.zoomImage.pixmap()))
+            self.ui.zoomImage.paint.setPen(self.ui.image.pen)
             if len(zoomPoints) > 0:
                 for (i,j) in zoomPoints:
                     self.ui.zoomImage.paint.drawPoint(i,j)
@@ -153,7 +154,7 @@ class MainWindow(QtGui.QMainWindow):
                                 if abs(dx) < 0.1 and abs(dy) < 0.1:
                                     index = k
                             if index > -1:
-                                self.ui.zoomImage.paint.drawText(i+10,j-10, QtCore.QString.number(index))
+                                self.ui.zoomImage.paint.drawText(i+3,j-3, QtCore.QString.number(index))
                         except ValueError:
                             pass
                             
@@ -173,8 +174,8 @@ class MainWindow(QtGui.QMainWindow):
             if len(points[currentIndex]) > 0:
                 for (i,j) in points[currentIndex]:
                     self.ui.image.paint.drawPoint(i,j)
-                    if indicesVisible:
-                        self.ui.image.paint.drawText(i+4,j-4, QtCore.QString.number(points[currentIndex].index((i,j))))
+                    # if indicesVisible:
+                        # self.ui.image.paint.drawText(i+4,j-4, QtCore.QString.number(points[currentIndex].index((i,j))))
             self.ui.image.paint.end()
 
     def connectSignals(self):
