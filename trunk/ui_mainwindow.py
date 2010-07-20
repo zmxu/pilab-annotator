@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'annotator.ui'
 #
-# Created: Tue Jul 20 16:13:28 2010
+# Created: Tue Jul 20 16:28:12 2010
 #      by: PyQt4 UI code generator 4.7.4
 #
 # WARNING! All changes made in this file will be lost!
