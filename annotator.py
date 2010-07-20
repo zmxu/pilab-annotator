@@ -6,17 +6,17 @@ import sys, os
 from PyQt4 import QtGui, QtCore
 from ui_mainwindow import Ui_mainWindow
 
-extensions = (".png",".jpg")                    #image file extensions to filter
-currentTool = ""                                #string to describe current tool
-modes = {"point":"click", "rectangle":"", "":""}  #modes for tools
-currentIndex = 0                    #index of current image
-points = []                                     #point coordinates for images
-zoomPoints = []                            # point coordinates for the zoomed image
-zoomAmount = 3                          # the image is zoomed "zoomAmount" times
-pointWidth = 5                              # width of the red points
-penColor = QtCore.Qt.red             # pen color for points/rectangles
-warningTimeout = 10000             # time in miliseconds to show warning message
-indicesVisible = False                  # visibility of indices of points/rectangles
+extensions = (".png",".jpg")                        # image file extensions to filter
+currentTool = "point"                               # string to describe current tool
+modes = {"point":"click", "rectangle":"", "":""}    # modes for tools
+currentIndex = 0                                    # index of current image
+points = []                                         # point coordinates for images
+zoomPoints = []                                     # point coordinates for the zoomed image
+zoomAmount = 3                                      # the image is zoomed "zoomAmount" times
+pointWidth = 5                                      # width of the red points (is to be odd)
+penColor = QtCore.Qt.red                            # pen color for points/rectangles
+warningTimeout = 10000                              # time in miliseconds to show warning message
+indicesVisible = True                               # visibility of indices of points/rectangles
 
 
 class MainWindow(QtGui.QMainWindow):
@@ -35,10 +35,14 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.dotUndoButton.hide()
         self.ui.rectClickButton.hide()
         self.ui.rectDragButton.hide()
+        
+        self.ui.saveAction.setEnabled(False)
 
         self.dragIsActive = False
         if indicesVisible:
             self.ui.indicesAction.setChecked(True)
+            
+        # Force pointwidth to be odd
         if pointWidth % 2 == 0:
             pointWidth += 1
 
@@ -50,6 +54,7 @@ class MainWindow(QtGui.QMainWindow):
 
         self.ui.image.paint = QtGui.QPainter()
         self.ui.image.pen = QtGui.QPen(penColor)
+        
         self.ui.coo = QtGui.QLabel()
         self.ui.statusBar.addPermanentWidget(self.ui.coo)
         self.ui.coord = QtGui.QLabel()
@@ -62,9 +67,12 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.image.mousePressEvent = self.imageMousePressEvent
         self.ui.image.mouseReleaseEvent = self.imageMouseReleaseEvent
         self.ui.image.mouseMoveEvent = self.imageMouseMoveEvent
+        
+        if currentTool == "point":
+            self.handleDotButton(True)
 
     def mainKeyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Shift and modes[currentTool]!="drag":
+        if event.key() == QtCore.Qt.Key_Shift and modes[currentTool] != "drag":
             if currentTool == "point":
                 self.ui.dotDragButton.setChecked(True)
             if currentTool == "rectangle":
@@ -80,16 +88,17 @@ class MainWindow(QtGui.QMainWindow):
 
     def imageMouseMoveEvent(self, event):
         global zoomPoints, points, currentIndex
+        x,y = event.pos().x(),event.pos().y()
         if self.dragIsActive:
-            points[currentIndex][self.pointToDrag] = (event.pos().x(),event.pos().y())
-            self.ui.image.repaint()
+            if 0 <= x < self.ui.image.width() and 0 <= y < self.ui.image.height():
+                points[currentIndex][self.pointToDrag] = (x,y)
+                self.ui.image.repaint()
         if self.ui.image.pixmap():
-            width = self.ui.zoomImage.width()
-            height = width = self.ui.zoomImage.height()
+            height, width = self.ui.zoomImage.width(), self.ui.zoomImage.height()
 
-            self.left, self.up = self.calculateZoomBorders(event.pos().x(), event.pos().y())
+            self.left, self.up = self.calculateZoomBorders(x,y)
   
-            self.ui.coord.setText("(%d, %d)" % (event.pos().x(), event.pos().y()))
+            self.ui.coord.setText("(%d, %d)" % (x,y))
             if len(points[currentIndex]) > 0:
                 del zoomPoints[:]
                 for (i,j) in points[currentIndex]:
@@ -98,19 +107,24 @@ class MainWindow(QtGui.QMainWindow):
                     if 0 <= newX <= width and 0 <= newY <= height:
                         zoomPoints.append((newX, newY))
 
-            self.updateZoomedImage(event.pos().x(), event.pos().y())
+            self.updateZoomedImage(x,y)
 
     def imageMousePressEvent(self, event):
-        global points, modes, currentTool, currentIndex
+        global zoomPoints, points, modes, currentTool, currentIndex
+        x,y = event.pos().x(),event.pos().y()
         if self.ui.image.pixmap() and currentTool == "point":
             if modes["point"] == "click":
-                points[currentIndex].append((event.pos().x(),event.pos().y()))
+                points[currentIndex].append((x,y))
+                self.left, self.up = self.calculateZoomBorders(x,y)
+                newX,newY = zoomAmount * x - self.left, zoomAmount * y - self.up
+                zoomPoints.append((newX, newY))
+                
                 self.ui.image.repaint()
                 self.ui.zoomImage.repaint()
             elif modes["point"] == "drag" or modes["point"] == "tempDrag":
                 self.dragIsActive = False
                 for (i,j) in points[currentIndex]:
-                    if abs(i-event.pos().x()) <= pointWidth and abs(j-event.pos().y()) <= pointWidth:
+                    if abs(i-x) <= pointWidth and abs(j-y) <= pointWidth:
                         self.pointToDrag = points[currentIndex].index((i,j))
                         self.dragIsActive = True
 
@@ -133,9 +147,11 @@ class MainWindow(QtGui.QMainWindow):
                     if indicesVisible:
                         try:
                             index = points[currentIndex].index(((i+self.left)/zoomAmount,(j+self.up)/zoomAmount))
+                            
                             self.ui.zoomImage.paint.drawText(i+10,j-10, QtCore.QString.number(index))
                         except ValueError:
                             pass
+                            
             self.ui.zoomImage.paint.setPen(self.ui.zoomImage.crossPen)
             self.ui.zoomImage.paint.drawLine(0, self.ui.zoomImage.height()/2, self.ui.zoomImage.width(), self.ui.zoomImage.height()/2)
             self.ui.zoomImage.paint.drawLine(self.ui.zoomImage.width()/2, 0, self.ui.zoomImage.width()/2, self.ui.zoomImage.height())
@@ -175,8 +191,8 @@ class MainWindow(QtGui.QMainWindow):
                              self.ui.navigationAction, QtCore.SLOT("setChecked(bool)"))
 
         self.connect(self.ui.indicesAction, QtCore.SIGNAL("triggered(bool)"), self.showIndices)
-        self.connect(self.ui.exitAction, QtCore.SIGNAL("triggered()"), self, QtCore.SLOT("close()"))
         self.connect(self.ui.openAction, QtCore.SIGNAL("triggered()"), self.openImageDirectory)
+        self.connect(self.ui.saveAction, QtCore.SIGNAL("triggered()"), self.saveAnnotations)
         self.connect(self.ui.imageComboBox, QtCore.SIGNAL("currentIndexChanged(QString)"), self.changeImage)
         self.connect(self.ui.prevButton, QtCore.SIGNAL("clicked()"), self.previousImage)
         self.connect(self.ui.nextButton, QtCore.SIGNAL("clicked()"), self.nextImage)
@@ -191,36 +207,37 @@ class MainWindow(QtGui.QMainWindow):
         self.connect(self.ui.dotUndoButton, QtCore.SIGNAL("clicked()"), self.handleDotUndoButton)
 
     def previousImage(self):
-        index = self.ui.imageComboBox.currentIndex()-1
-        if index<0:
-            index=0
+        index = self.ui.imageComboBox.currentIndex() - 1
+        if index < 0:
+            index = 0
         self.ui.imageComboBox.setCurrentIndex(index)
     def nextImage(self):
-        index = self.ui.imageComboBox.currentIndex()+1
+        index = self.ui.imageComboBox.currentIndex() + 1
         if index >= self.ui.imageComboBox.count():
-            index=self.ui.imageComboBox.count()-1
+            index = self.ui.imageComboBox.count() - 1
         self.ui.imageComboBox.setCurrentIndex(index)
     def plusTenImage(self):
-        index = self.ui.imageComboBox.currentIndex()+10
+        index = self.ui.imageComboBox.currentIndex() + 10
         if index >= self.ui.imageComboBox.count():
-            index=self.ui.imageComboBox.count()-1
+            index = self.ui.imageComboBox.count() - 1
         self.ui.imageComboBox.setCurrentIndex(index)
     def minusTenImage(self):
-        index = self.ui.imageComboBox.currentIndex()-10
+        index = self.ui.imageComboBox.currentIndex() - 10
         if index < 0:
-            index=0
+            index = 0
         self.ui.imageComboBox.setCurrentIndex(index)
     def lastImage(self):
-        self.ui.imageComboBox.setCurrentIndex(self.ui.imageComboBox.count()-1)
+        self.ui.imageComboBox.setCurrentIndex(self.ui.imageComboBox.count() - 1)
     def firstImage(self):
         self.ui.imageComboBox.setCurrentIndex(0)
 
     def openImageDirectory(self, imagePath=None):
-        global path, points
+        global path
+        global points
         if imagePath:
             path = imagePath
         else:  
-            path = unicode(QtGui.QFileDialog.getExistingDirectory(self, "Open directory", "/home"))
+            path = QtGui.QFileDialog.getExistingDirectory(self, "Open directory", ".")
         if path:
             try:
                 allFiles = os.listdir(path)
@@ -229,17 +246,48 @@ class MainWindow(QtGui.QMainWindow):
                 points = []
                 self.ui.coord.setText("")
                 if len(imageFiles) > 0:
-                    for i in imageFiles:
-                        points.append([])
+                    for imageFile in imageFiles:
+                        annotationFile = os.path.join(path, os.path.splitext(imageFile)[0] + ".pts") # @TODO: hardcoded extension!
+                        try:
+                            f = open(annotationFile, 'r')
+                            fileContent = f.read().split()
+                            start =  fileContent.index("{") + 1
+                            end = fileContent.index("}")
+                            pts = []
+                            while start < end:
+                                pts.append((float(fileContent[start]),float(fileContent[start+1])))
+                                start += 2
+                            f.close()
+                            points.append(pts)
+                        except:
+                            points.append([])
+                            
                     self.ui.imageComboBox.addItems(imageFiles)
                     self.loadImage("%s/%s" % (path, self.ui.imageComboBox.currentText()))
                     self.setWindowTitle("%s (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
+                    self.ui.saveAction.setEnabled(True)
                 else:
                     self.ui.statusBar.showMessage("No image found in the directory.", warningTimeout)
                     self.setWindowTitle("pilab-annotator")
-            except OSError as (errorNo, errorMessage):
-                self.ui.statusBar.showMessage(errorMessage, warningTimeout)
+            except OSError:
+                self.ui.statusBar.showMessage(OSError, warningTimeout)
+        
 
+    def saveAnnotations(self):
+        "Currently supports only saving pts files"
+        global points, path
+        filename = os.path.splitext(str(self.ui.imageComboBox.currentText()))[0]
+        filePath = os.path.join(str(path), str(filename) + ".pts")
+        currentIndex = self.ui.imageComboBox.currentIndex()
+        f = open(filePath, 'w')
+        f.write('version: 1\nn_points: %d\n{\n' % len(points[currentIndex]))
+        for p in points[currentIndex]:
+            f.write("    %d %d\n" % (p[0], p[1]))
+        f.write('}\n')
+        f.close()
+
+        self.ui.statusBar.showMessage("File saved to %s" % (filePath))
+        
     def updateZoomedImage(self, x, y):
         width = self.ui.zoomImage.width()
         height =  width = self.ui.zoomImage.height()
@@ -318,6 +366,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.dotUndoButton.show()
         self.ui.rectClickButton.hide()
         self.ui.rectDragButton.hide()
+        
     def showRectOptions(self):
         self.ui.rectClickButton.show()
         self.ui.rectDragButton.show()
@@ -328,26 +377,25 @@ class MainWindow(QtGui.QMainWindow):
     def calculateZoomBorders(self, mouseX, mouseY):
         left = mouseX * zoomAmount  - self.ui.zoomImage.width()/2
         up = mouseY * zoomAmount - self.ui.zoomImage.height()/2
-        if left<0:
+        if left < 0:
             left = 0
         elif left + self.ui.zoomImage.width() > self.zoomedPixmap.width():
             left = self.zoomedPixmap.width() - self.ui.zoomImage.width()
-        if up<0:
+        if up < 0:
             up = 0
         elif up + self.ui.zoomImage.height() > self.zoomedPixmap.height():
             up = self.zoomedPixmap.height() - self.ui.zoomImage.height()
         
         return (left, up)
-
-    #def coordsNormalToZoom(self, x, y):
         
 
 
-app = QtGui.QApplication(sys.argv)
-main = MainWindow()
-main.show()
+if __name__ == "__main__":
+    app = QtGui.QApplication(sys.argv)
+    main = MainWindow()
+    main.show()
 
-if len(sys.argv) == 2:
-    main.openImageDirectory(unicode(sys.argv[1])) 
+    if len(sys.argv) == 2:
+        main.openImageDirectory(sys.argv[1]) 
 
-sys.exit(app.exec_())
+    sys.exit(app.exec_())
