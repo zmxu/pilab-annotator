@@ -5,6 +5,7 @@
 import sys, os
 from PyQt4 import QtGui, QtCore
 from ui_mainwindow import Ui_mainWindow
+import Image, ImageFilter, ImageMath, ImageChops
 
 extensions = (".png",".jpg")                        # image file extensions to filter
 currentTool = "point"                               # string to describe current tool
@@ -14,11 +15,17 @@ points = []                                         # point coordinates for imag
 zoomPoints = []                                     # point coordinates for the zoomed image
 zoomAmount = 3                                      # the image is zoomed "zoomAmount" times
 pointWidth = 3                                      # width of the red points (is to be odd)
-penColor = QtCore.Qt.red                            # pen color for points/rectangles
+# penColor = QtCore.Qt.red                            # pen color for points/rectangles
+penColor = QtGui.QColor(255,0,0)                            # pen color for points/rectangles
 warningTimeout = 10000                              # time in miliseconds to show warning message
 indicesVisible = True                               # visibility of indices of points/rectangles
+useSmartColor = True                                # smart coloring of the points
+currentImage = []                                   # current PIL image, filtered, and probabilities extracted
 
-
+def getSmartColor(intensity):
+    return min(15*intensity,255), 50, 100
+    
+    
 class MainWindow(QtGui.QMainWindow):
     def __init__(self):
         global pointWidth
@@ -144,6 +151,10 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.zoomImage.paint.setPen(self.ui.image.pen)
             if len(zoomPoints) > 0:
                 for (i,j) in zoomPoints:
+                    if useSmartColor:
+                        r,g,b = getSmartColor(currentImage.getpixel(((i+self.left)/zoomAmount,(j+self.up)/zoomAmount)))
+                        self.ui.zoomImage.paint.setPen(QtGui.QPen(QtGui.QColor(r,g,b), pointWidth*3))
+
                     self.ui.zoomImage.paint.drawPoint(i,j)
                     if indicesVisible:
                         try:
@@ -165,7 +176,7 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.zoomImage.paint.end()
         
     def imagePaintEvent(self, event):
-        global points, currentIndex
+        global points, currentIndex, currentImage
         if self.ui.image.pixmap():
             self.ui.image.pen.setWidth(pointWidth)
             self.ui.image.paint.begin(self.ui.image)
@@ -173,6 +184,10 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.image.paint.drawImage(self.ui.image.rect(), QtGui.QImage(self.ui.image.pixmap()))
             if len(points[currentIndex]) > 0:
                 for (i,j) in points[currentIndex]:
+                    if useSmartColor:
+                        r,g,b = getSmartColor(currentImage.getpixel((i,j)))
+                        self.ui.image.paint.setPen(QtGui.QPen(QtGui.QColor(r,g,b), pointWidth))
+                        
                     self.ui.image.paint.drawPoint(i,j)
                     # if indicesVisible:
                         # self.ui.image.paint.drawText(i+4,j-4, QtCore.QString.number(points[currentIndex].index((i,j))))
@@ -269,7 +284,7 @@ class MainWindow(QtGui.QMainWindow):
                             points.append([])
                             
                     self.ui.imageComboBox.addItems(imageFiles)
-                    self.loadImage("%s/%s" % (path, self.ui.imageComboBox.currentText()))
+                    # self.loadImage("%s/%s" % (path, self.ui.imageComboBox.currentText()))
                     self.setWindowTitle("%s (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
                     self.ui.saveAction.setEnabled(True)
                 else:
@@ -303,7 +318,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.zoomImage.setFixedSize(myPixmap.size())
 
     def loadImage(self, path):
-        global zoomAmount
+        global zoomAmount, currentImage
         pixmap = QtGui.QPixmap(path)
         self.ui.image.setPixmap(pixmap)
         self.ui.image.setFixedSize(pixmap.size())
@@ -313,8 +328,30 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.zoomImage.setPixmap(myPixmap)
         self.ui.zoomImage.setFixedSize(myPixmap.size())
 
+        currentImage = Image.open(path)
+        # convert to grayscale
+        if currentImage.mode != "L":
+            currentImage= currentImage.convert("L")
+            
+        # Sobel operator
+        # edge1 = currentImage.filter(ImageFilter.Kernel((3,3), [1, 0, -1, 2, 0, -2, 1, 0, -1], scale=4))
+        # edge2 = currentImage.filter(ImageFilter.Kernel((3,3), [1, 2, 1, 0, 0, 0, -1, -2, -1], scale=4))
+        # edge3 = currentImage.filter(ImageFilter.Kernel((3,3), [-1, 0, 1, -2, 0, 2, -1, 0, 1], scale=4))
+        # edge4 = currentImage.filter(ImageFilter.Kernel((3,3), [-1, -2, -1, 0, 0, 0, 1, 2, 1], scale=4))
+        
+        # Scharr operator
+        edge1 = currentImage.filter(ImageFilter.Kernel((3,3), [3, 0, -3, 10, 0, -10, 3, 0, -3], scale=16))
+        edge2 = currentImage.filter(ImageFilter.Kernel((3,3), [3, 10, 3, 0, 0, 0, -3, -10, -3], scale=16))
+        edge3 = currentImage.filter(ImageFilter.Kernel((3,3), [-3, 0, 3, -10, 0, 10, -3, 0, 3], scale=16))
+        edge4 = currentImage.filter(ImageFilter.Kernel((3,3), [-3, -10, -3, 0, 0, 0, 3, 10, 3], scale=16))
+        
+        currentImage = ImageChops.add(ImageChops.add(ImageChops.add(edge1, edge2), edge3), edge4)
+
+        # currentImage.save("tmp.png")
+
     def changeImage(self, text):
         global path, currentIndex
+
         self.loadImage("%s/%s" % (path, text))
         self.setWindowTitle("%s (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
         currentIndex = self.ui.imageComboBox.currentIndex()
