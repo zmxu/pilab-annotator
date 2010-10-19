@@ -258,7 +258,7 @@ class MainWindow(QtGui.QMainWindow):
         if imagePath:
             path = imagePath
         else:  
-            path = QtGui.QFileDialog.getExistingDirectory(self, "Open directory", ".")
+            path = str(QtGui.QFileDialog.getExistingDirectory(self, "Open directory", "."))
         if path:
             try:
                 allFiles = os.listdir(path)
