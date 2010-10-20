@@ -5,6 +5,8 @@
 import sys, os
 from PyQt4 import QtGui, QtCore
 from ui_mainwindow import Ui_mainWindow
+from xml.dom.minidom import Document, CDATASection
+from xml.dom import minidom
 import Image, ImageFilter, ImageMath, ImageChops
 
 extensions = (".png",".jpg")                        # image file extensions to filter
@@ -268,17 +270,26 @@ class MainWindow(QtGui.QMainWindow):
                 self.ui.coord.setText("")
                 if len(imageFiles) > 0:
                     for imageFile in imageFiles:
-                        annotationFile = os.path.join(path, os.path.splitext(imageFile)[0] + ".pts") # @TODO: hardcoded extension!
+                        annotationFile = os.path.join(path, os.path.splitext(imageFile)[0] + ".xml") # @TODO: hardcoded extension!
                         try:
-                            f = open(annotationFile, 'r')
-                            fileContent = f.read().split()
-                            start =  fileContent.index("{") + 1
-                            end = fileContent.index("}")
+                            xmldoc = minidom.parse(annotationFile)
+                            objects = xmldoc.getElementsByTagName("objects")
+	
                             pts = []
-                            while start < end:
-                                pts.append((float(fileContent[start]),float(fileContent[start+1])))
-                                start += 2
-                            f.close()
+                            rects = []
+	
+                            for object in objects:
+                                lines = object.childNodes[1].data.splitlines()
+                            	if object.attributes["type"].value == "points":
+                            		for line in lines:
+                            		    (x,y) = line.split(' ')
+                            		    pts.append((int(x), int(y)))
+                            	elif object.attributes["type"].value == "rectangles":
+                            		for line in lines:
+                            			#(x,y,z,t) = line.split(' ')   # @TODO: uncomment when rectangle is implemented
+                            			#rects.append((int(x), int(y), int(z), int(t)))
+										rects.append(line.split(' '))
+										
                             points.append(pts)
                         except:
                             points.append([])
@@ -295,18 +306,40 @@ class MainWindow(QtGui.QMainWindow):
         
 
     def saveAnnotations(self):
-        "Currently supports only saving pts files"
+        "Currently supports only saving xml files"
         global points, path
         filename = os.path.splitext(str(self.ui.imageComboBox.currentText()))[0]
-        filePath = os.path.join(str(path), str(filename) + ".pts")
+        filePath = os.path.join(str(path), str(filename) + ".xml")
         currentIndex = self.ui.imageComboBox.currentIndex()
-        f = open(filePath, 'w')
-        f.write('version: 1\nn_points: %d\n{\n' % len(points[currentIndex]))
-        for p in points[currentIndex]:
-            f.write("    %d %d\n" % (p[0], p[1]))
-        f.write('}\n')
-        f.close()
+       
+        doc = Document()
+        
+        annotation = doc.createElement("annotation")
+        doc.appendChild(annotation)
+		
+        objects = doc.createElement("objects")
+        objects.setAttribute("type", "points")
+        objects.setAttribute("count", "%.0f" % len(points[currentIndex]))
+        annotation.appendChild(objects)
+		
+        text = ""
+        for (x,y) in points[currentIndex]:
+            text += "%.0f %.0f\n" % (x,y)
+        cDataSection = doc.createCDATASection(text)
+        objects.appendChild(cDataSection)
 
+        objects = doc.createElement("objects")
+        objects.setAttribute("type", "rectangles")
+        objects.setAttribute("count", "int")
+        annotation.appendChild(objects)
+		
+        cDataSection = doc.createCDATASection("\n")
+        objects.appendChild(cDataSection)
+
+        f = open(filePath, 'w')
+        f.write(doc.toprettyxml(indent="  ", encoding="UTF-8"))
+        f.close()
+        
         self.ui.statusBar.showMessage("File saved to %s" % (filePath))
         
     def updateZoomedImage(self, x, y):
