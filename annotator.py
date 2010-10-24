@@ -26,7 +26,19 @@ currentImage = []                                   # current PIL image, filtere
 
 def getSmartColor(intensity):
     return min(15*intensity,255), 50, 100
-    
+
+class CommandAddPoint(QtGui.QUndoCommand):
+	def __init__(self, pointList, point, description):
+		super(CommandAddPoint, self).__init__(description)
+		self.pointList = pointList
+		self.point = point
+
+	def redo(self):
+		self.pointList.append(self.point)
+		
+	def undo(self):
+		item = self.pointList.pop()
+		del item    
     
 class MainWindow(QtGui.QMainWindow):
     def __init__(self):
@@ -44,6 +56,8 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.dotUndoButton.hide()
         self.ui.rectClickButton.hide()
         self.ui.rectDragButton.hide()
+		
+        self.undoStack = QtGui.QUndoStack(self)
         
         self.ui.saveAction.setEnabled(False)
 
@@ -123,7 +137,9 @@ class MainWindow(QtGui.QMainWindow):
         x,y = event.pos().x(),event.pos().y()
         if self.ui.image.pixmap() and currentTool == "point":
             if modes["point"] == "click":
-                points[currentIndex].append((x,y))
+                command = CommandAddPoint(points[currentIndex], (x,y), "Add Point @(%d-%d)" %(x,y))
+                self.undoStack.push(command)
+                #points[currentIndex].append((x,y))
                 self.left, self.up = self.calculateZoomBorders(x,y)
                 newX,newY = zoomAmount * x - self.left, zoomAmount * y - self.up
                 zoomPoints.append((newX, newY))
@@ -417,10 +433,12 @@ class MainWindow(QtGui.QMainWindow):
             self.showRectOptions()
 
     def handleDotUndoButton(self):
-        global points, currentIndex
-        if len(points) > currentIndex and points[currentIndex]:
-            points[currentIndex].pop()
-            self.ui.image.repaint()
+		global points, currentIndex
+		self.undoStack.undo()
+		self.ui.image.repaint()
+        #if len(points) > currentIndex and points[currentIndex]:
+        #    points[currentIndex].pop()
+		#	 self.ui.image.repaint()
 
     def handleDotClickButton(self, check):
         if check:
