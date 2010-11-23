@@ -1,6 +1,7 @@
 import sys
 from xml.dom.minidom import Document, CDATASection
 from xml.dom import minidom
+from PIL import Image
 
 def pts2xml(ptsFile, xmlFile=None):
 	if xmlFile == None:
@@ -72,6 +73,62 @@ def xml2pts(xmlFile, ptsFile=None):
 	f = open(ptsFile, 'w')
 	f.write(text)
 	f.close
+	
+def asf2xml(asfFile, xmlFile=None):
+	if xmlFile == None:
+		xmlFile = asfFile[:-4] + ".xml"
+	
+	f = open(asfFile, 'r')
+	fileContent = f.readlines()
+
+	i = 0
+	while i < len(fileContent):
+		if fileContent[i].startswith("#") or fileContent[i] == '\n':
+			fileContent.pop(i)
+		else:
+			i += 1
+			
+	count = int(fileContent.pop(0))
+	imageStr = fileContent.pop(-1).rstrip()
+	(sx,sy) = Image.open(imageStr).size
+	index = 0
+	
+	pts = []
+	while index < count:
+		line = fileContent[index].split()
+		print line[2], line[3]
+		pts.append((float(line[2])*sx,float(line[3])*sy))
+		index += 1
+
+	f.close()
+		
+	doc = Document()
+
+	annotation = doc.createElement("annotation")
+	doc.appendChild(annotation)
+
+	objects = doc.createElement("objects")
+	objects.setAttribute("type", "points")
+	objects.setAttribute("count", "%.0f" % len(pts))
+	annotation.appendChild(objects)
+
+	text = ""
+	for (x,y) in pts:
+		text += "%.0f %.0f\n" % (x,y)
+	cDataSection = doc.createCDATASection(text)
+	objects.appendChild(cDataSection)
+
+	objects = doc.createElement("objects")
+	objects.setAttribute("type", "rectangles")
+	objects.setAttribute("count", "int")
+	annotation.appendChild(objects)
+	
+	cDataSection = doc.createCDATASection("\n")
+	objects.appendChild(cDataSection)
+
+	xml = open(xmlFile, 'w')
+	xml.write(doc.toprettyxml(indent="  ", encoding="UTF-8"))
+	xml.close()
 
 if __name__ == "__main__":
     if len(sys.argv) == 4:
@@ -83,3 +140,6 @@ if __name__ == "__main__":
 		
 		elif operation == "xml2pts":
 			xml2pts(input,output)
+		
+		elif operation == "asf2xml":
+			asf2xml(input,output)
