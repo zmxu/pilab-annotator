@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'annotator.ui'
 #
-# Created: Tue Jul 20 16:28:12 2010
-#      by: PyQt4 UI code generator 4.7.4
+# Created: Mon Oct 25 01:49:43 2010
+#      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_mainWindow(object):
     def setupUi(self, mainWindow):
         mainWindow.setObjectName("mainWindow")
-        mainWindow.resize(921, 599)
+        mainWindow.resize(970, 599)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(6)
@@ -50,7 +50,7 @@ class Ui_mainWindow(object):
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         mainWindow.setCentralWidget(self.centralwidget)
         self.menuBar = QtGui.QMenuBar(mainWindow)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 921, 22))
+        self.menuBar.setGeometry(QtCore.QRect(0, 0, 970, 22))
         font = QtGui.QFont()
         font.setFamily("Bitstream Charter")
         font.setPointSize(10)
@@ -64,10 +64,12 @@ class Ui_mainWindow(object):
         self.windowsMenu.setObjectName("windowsMenu")
         self.menuHelp = QtGui.QMenu(self.menuBar)
         self.menuHelp.setObjectName("menuHelp")
+        self.menuEdit = QtGui.QMenu(self.menuBar)
+        self.menuEdit.setObjectName("menuEdit")
         mainWindow.setMenuBar(self.menuBar)
         self.toolBox = QtGui.QDockWidget(mainWindow)
         self.toolBox.setEnabled(True)
-        self.toolBox.setMinimumSize(QtCore.QSize(0, 100))
+        self.toolBox.setMinimumSize(QtCore.QSize(81, 100))
         self.toolBox.setMaximumSize(QtCore.QSize(524287, 100))
         font = QtGui.QFont()
         font.setFamily("Sans Serif")
@@ -107,7 +109,7 @@ class Ui_mainWindow(object):
         self.toolBox.setWidget(self.dockWidgetContents_2)
         mainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.toolBox)
         self.optionBox = QtGui.QDockWidget(mainWindow)
-        self.optionBox.setMinimumSize(QtCore.QSize(0, 200))
+        self.optionBox.setMinimumSize(QtCore.QSize(81, 200))
         self.optionBox.setMaximumSize(QtCore.QSize(524287, 200))
         font = QtGui.QFont()
         font.setFamily("Sans Serif")
@@ -300,6 +302,12 @@ class Ui_mainWindow(object):
         self.saveAction.setCheckable(False)
         self.saveAction.setShortcutContext(QtCore.Qt.ApplicationShortcut)
         self.saveAction.setObjectName("saveAction")
+        self.undoAction = QtGui.QAction(mainWindow)
+        self.undoAction.setEnabled(False)
+        self.undoAction.setObjectName("undoAction")
+        self.redoAction = QtGui.QAction(mainWindow)
+        self.redoAction.setEnabled(False)
+        self.redoAction.setObjectName("redoAction")
         self.fileMenu.addAction(self.openAction)
         self.fileMenu.addAction(self.saveAction)
         self.fileMenu.addSeparator()
@@ -312,7 +320,10 @@ class Ui_mainWindow(object):
         self.viewMenu.addAction(self.indicesAction)
         self.menuHelp.addAction(self.actionAbout)
         self.menuHelp.addAction(self.actionHelp)
+        self.menuEdit.addAction(self.undoAction)
+        self.menuEdit.addAction(self.redoAction)
         self.menuBar.addAction(self.fileMenu.menuAction())
+        self.menuBar.addAction(self.menuEdit.menuAction())
         self.menuBar.addAction(self.viewMenu.menuAction())
         self.menuBar.addAction(self.menuHelp.menuAction())
 
@@ -326,6 +337,7 @@ class Ui_mainWindow(object):
         self.viewMenu.setTitle(QtGui.QApplication.translate("mainWindow", "View", None, QtGui.QApplication.UnicodeUTF8))
         self.windowsMenu.setTitle(QtGui.QApplication.translate("mainWindow", "Windows", None, QtGui.QApplication.UnicodeUTF8))
         self.menuHelp.setTitle(QtGui.QApplication.translate("mainWindow", "Help", None, QtGui.QApplication.UnicodeUTF8))
+        self.menuEdit.setTitle(QtGui.QApplication.translate("mainWindow", "Edit", None, QtGui.QApplication.UnicodeUTF8))
         self.toolBox.setWindowTitle(QtGui.QApplication.translate("mainWindow", "Toolbox", None, QtGui.QApplication.UnicodeUTF8))
         self.dotButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Point tool", None, QtGui.QApplication.UnicodeUTF8))
         self.rectangleButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Rectangle tool", None, QtGui.QApplication.UnicodeUTF8))
@@ -335,7 +347,6 @@ class Ui_mainWindow(object):
         self.dotClickButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Draw", None, QtGui.QApplication.UnicodeUTF8))
         self.dotDragButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Drag", None, QtGui.QApplication.UnicodeUTF8))
         self.dotUndoButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Undo", None, QtGui.QApplication.UnicodeUTF8))
-        self.dotUndoButton.setShortcut(QtGui.QApplication.translate("mainWindow", "Ctrl+Z", None, QtGui.QApplication.UnicodeUTF8))
         self.zoomBox.setWindowTitle(QtGui.QApplication.translate("mainWindow", "Zoom", None, QtGui.QApplication.UnicodeUTF8))
         self.navigationBox.setWindowTitle(QtGui.QApplication.translate("mainWindow", "Navigation", None, QtGui.QApplication.UnicodeUTF8))
         self.prevButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Previous image", None, QtGui.QApplication.UnicodeUTF8))
@@ -374,4 +385,8 @@ class Ui_mainWindow(object):
         self.actionHelp.setShortcut(QtGui.QApplication.translate("mainWindow", "F1", None, QtGui.QApplication.UnicodeUTF8))
         self.saveAction.setText(QtGui.QApplication.translate("mainWindow", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.saveAction.setShortcut(QtGui.QApplication.translate("mainWindow", "Ctrl+S", None, QtGui.QApplication.UnicodeUTF8))
+        self.undoAction.setText(QtGui.QApplication.translate("mainWindow", "Undo", None, QtGui.QApplication.UnicodeUTF8))
+        self.undoAction.setShortcut(QtGui.QApplication.translate("mainWindow", "Ctrl+Z", None, QtGui.QApplication.UnicodeUTF8))
+        self.redoAction.setText(QtGui.QApplication.translate("mainWindow", "Redo", None, QtGui.QApplication.UnicodeUTF8))
+        self.redoAction.setShortcut(QtGui.QApplication.translate("mainWindow", "Ctrl+Y", None, QtGui.QApplication.UnicodeUTF8))
 

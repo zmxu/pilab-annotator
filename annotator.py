@@ -23,22 +23,28 @@ warningTimeout = 10000                              # time in miliseconds to sho
 indicesVisible = True                               # visibility of indices of points/rectangles
 useSmartColor = True                                # smart coloring of the points
 currentImage = []                                   # current PIL image, filtered, and probabilities extracted
+undoRedoStatus = [[]]
 
 def getSmartColor(intensity):
     return min(15*intensity,255), 50, 100
 
 class CommandAddPoint(QtGui.QUndoCommand):
-	def __init__(self, pointList, point, description):
+	global points, zoomPoints
+	def __init__(self, index, point, zoomPoint, description):
 		super(CommandAddPoint, self).__init__(description)
-		self.pointList = pointList
+		self.pointList = points[index]
 		self.point = point
+		self.zoomPoint = zoomPoint
 
 	def redo(self):
 		self.pointList.append(self.point)
+		zoomPoints.append(self.zoomPoint)
 		
 	def undo(self):
 		item = self.pointList.pop()
-		del item    
+		del item   
+		item = zoomPoints.pop()
+		del item  		
     
 class MainWindow(QtGui.QMainWindow):
     def __init__(self):
@@ -49,6 +55,8 @@ class MainWindow(QtGui.QMainWindow):
         self.ui = Ui_mainWindow()
         self.ui.setupUi(self)
         self.setCentralWidget(self.ui.scrollArea)
+		
+        self.undoStacks = []
         self.connectSignals()
 
         self.ui.dotClickButton.hide()
@@ -56,8 +64,6 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.dotUndoButton.hide()
         self.ui.rectClickButton.hide()
         self.ui.rectDragButton.hide()
-		
-        self.undoStack = QtGui.QUndoStack(self)
         
         self.ui.saveAction.setEnabled(False)
 
@@ -137,12 +143,13 @@ class MainWindow(QtGui.QMainWindow):
         x,y = event.pos().x(),event.pos().y()
         if self.ui.image.pixmap() and currentTool == "point":
             if modes["point"] == "click":
-                command = CommandAddPoint(points[currentIndex], (x,y), "Add Point @(%d-%d)" %(x,y))
-                self.undoStack.push(command)
                 #points[currentIndex].append((x,y))
                 self.left, self.up = self.calculateZoomBorders(x,y)
                 newX,newY = zoomAmount * x - self.left, zoomAmount * y - self.up
                 zoomPoints.append((newX, newY))
+				
+                command = CommandAddPoint(currentIndex, (x,y), (newX,newY), "Add Point @(%d-%d)" %(x,y))
+                self.undoStacks[currentIndex].push(command)
                 
                 self.ui.image.repaint()
                 self.ui.zoomImage.repaint()
@@ -308,7 +315,17 @@ class MainWindow(QtGui.QMainWindow):
 										
                             points.append(pts)
                         except:
-                            points.append([])
+							points.append([])
+                        undoRedoStatus.append([False,False])
+                        self.undoStacks.append(QtGui.QUndoStack(self))
+                        self.connect(self.ui.undoAction, QtCore.SIGNAL("triggered()"), self.undoStacks[-1].undo)
+                        self.connect(self.ui.redoAction, QtCore.SIGNAL("triggered()"), self.undoStacks[-1].redo)
+                        self.connect(self.undoStacks[-1], QtCore.SIGNAL("indexChanged(int)"), self.ui.image, QtCore.SLOT("repaint()"))
+                        self.connect(self.undoStacks[-1], QtCore.SIGNAL("indexChanged(int)"), self.ui.zoomImage, QtCore.SLOT("repaint()"))
+                        self.connect(self.undoStacks[-1], QtCore.SIGNAL("canUndoChanged(bool)"), self.undoChange)
+                        self.connect(self.undoStacks[-1], QtCore.SIGNAL("canRedoChanged(bool)"), self.redoChange)
+                        #self.connect(self.undoStacks[-1], QtCore.SIGNAL("canUndoChanged(bool)"), self.ui.undoAction.setEnabled)
+                        #self.connect(self.undoStacks[-1], QtCore.SIGNAL("canRedoChanged(bool)"), self.ui.redoAction.setEnabled)
                             
                     self.ui.imageComboBox.addItems(imageFiles)
                     # self.loadImage("%s/%s" % (path, self.ui.imageComboBox.currentText()))
@@ -399,7 +416,7 @@ class MainWindow(QtGui.QMainWindow):
         # currentImage.save("tmp.png")
 
     def changeImage(self, text):
-        global path, currentIndex
+        global path, currentIndex, undoRedoStatus
 
         self.loadImage("%s/%s" % (path, text))
         self.setWindowTitle("%s (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
@@ -407,6 +424,9 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.indexLabel.setText("(%d / %d)" % (currentIndex+1, self.ui.imageComboBox.count()))
         self.ui.image.repaint()
         self.ui.zoomImage.repaint()
+		
+        self.undoChange(undoRedoStatus[currentIndex][0])
+        self.redoChange(undoRedoStatus[currentIndex][1])
 
     def showIndices(self, check):
         global indicesVisible
@@ -469,6 +489,16 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.dotClickButton.hide()
         self.ui.dotDragButton.hide()
         self.ui.dotUndoButton.hide()
+		
+    def undoChange(self, b):
+		global undoRedoStatus,currentIndex
+		self.ui.undoAction.setEnabled(b)
+		undoRedoStatus[currentIndex][0] = b
+		
+    def redoChange(self, b):
+		global undoRedoStatus,currentIndex
+		self.ui.redoAction.setEnabled(b)
+		undoRedoStatus[currentIndex][1] = b
 
     def calculateZoomBorders(self, mouseX, mouseY):
         left = mouseX * zoomAmount  - self.ui.zoomImage.width()/2

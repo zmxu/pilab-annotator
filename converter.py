@@ -96,7 +96,6 @@ def asf2xml(asfFile, xmlFile=None):
 	pts = []
 	while index < count:
 		line = fileContent[index].split()
-		print line[2], line[3]
 		pts.append((float(line[2])*sx,float(line[3])*sy))
 		index += 1
 
