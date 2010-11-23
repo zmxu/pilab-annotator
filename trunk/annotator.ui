@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>921</width>
+    <width>970</width>
     <height>599</height>
    </rect>
   </property>
@@ -88,7 +88,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>921</width>
+     <width>970</width>
      <height>22</height>
     </rect>
    </property>
@@ -130,7 +130,15 @@
     <addaction name="actionAbout"/>
     <addaction name="actionHelp"/>
    </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="undoAction"/>
+    <addaction name="redoAction"/>
+   </widget>
    <addaction name="fileMenu"/>
+   <addaction name="menuEdit"/>
    <addaction name="viewMenu"/>
    <addaction name="menuHelp"/>
   </widget>
@@ -140,7 +148,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
+     <width>81</width>
      <height>100</height>
     </size>
    </property>
@@ -248,7 +256,7 @@
   <widget class="QDockWidget" name="optionBox">
    <property name="minimumSize">
     <size>
-     <width>0</width>
+     <width>81</width>
      <height>200</height>
     </size>
    </property>
@@ -439,9 +447,6 @@
           <width>30</width>
           <height>23</height>
          </size>
-        </property>
-        <property name="shortcut">
-         <string>Ctrl+Z</string>
         </property>
         <property name="checkable">
          <bool>false</bool>
@@ -796,6 +801,28 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="undoAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="redoAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Y</string>
    </property>
   </action>
  </widget>
