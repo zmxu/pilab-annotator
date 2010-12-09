@@ -23,7 +23,9 @@ warningTimeout = 10000                              # time in miliseconds to sho
 indicesVisible = True                               # visibility of indices of points/rectangles
 useSmartColor = True                                # smart coloring of the points
 currentImage = []                                   # current PIL image, filtered, and probabilities extracted
-undoRedoStatus = []
+undoRedoStatus = []									# flags for undo/redo actions to enable/disable them
+annotationChanged = []								# flags for images to determine changes in annotation
+lastSavedState = 0									# QUndoStack index for the last state that is saved
 
 def getSmartColor(intensity):
     return min(15*intensity,255), 50, 100
@@ -180,6 +182,7 @@ class MainWindow(QtGui.QMainWindow):
 				
                 command = CommandAddPoint(currentIndex, (x,y), "Add Point @(%d-%d)" %(x,y))
                 self.undoStacks[currentIndex].push(command)
+                annotationChanged[currentIndex] = True
                 
                 self.ui.image.repaint()
                 self.ui.zoomImage.repaint()
@@ -239,6 +242,10 @@ class MainWindow(QtGui.QMainWindow):
     def imagePaintEvent(self, event):
         global points, currentIndex, currentImage
         if self.ui.image.pixmap():
+            if len(annotationChanged) and annotationChanged[currentIndex]:
+            	self.setWindowTitle("%s* (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
+            elif len(annotationChanged) and not annotationChanged[currentIndex]:
+            	self.setWindowTitle("%s (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
             self.ui.image.pen.setWidth(pointWidth)
             self.ui.image.paint.begin(self.ui.image)
             self.ui.image.paint.setPen(self.ui.image.pen)
@@ -253,6 +260,34 @@ class MainWindow(QtGui.QMainWindow):
                     # if indicesVisible:
                         # self.ui.image.paint.drawText(i+4,j-4, QtCore.QString.number(points[currentIndex].index((i,j))))
             self.ui.image.paint.end()
+			
+    def closeEvent(self, event):
+		saveAll = False
+		for i in range(self.ui.imageComboBox.count()):
+			if annotationChanged[i]:
+				self.ui.imageComboBox.setCurrentIndex(i)
+				if saveAll:
+					self.saveAnnotations()
+				else:					
+					quit_msg = "Save changes to the annotation file of \"%s\"?" % self.ui.imageComboBox.itemText(i)
+					reply = QtGui.QMessageBox.question(self, 'Quit', quit_msg, QtGui.QMessageBox.Save | 
+														QtGui.QMessageBox.SaveAll | QtGui.QMessageBox.Discard)
+					if reply == QtGui.QMessageBox.Save:
+						self.saveAnnotations()
+					elif reply == QtGui.QMessageBox.SaveAll:
+						saveAll = True
+						self.saveAnnotations()
+					else:
+						pass
+		event.accept()
+				
+		#quit_msg = "Are you sure you want to exit the program?"
+		#reply = QtGui.QMessageBox.question(self, 'Message', quit_msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+
+		#if reply == QtGui.QMessageBox.Yes:
+		#	event.accept()
+		#else:
+		#	event.ignore()
 
     def connectSignals(self):
         self.connect(self.ui.toolboxAction, QtCore.SIGNAL("triggered(bool)"), 
@@ -317,7 +352,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def openImageDirectory(self, imagePath=None):
         global path
-        global points
+        global points, annotationChanged
         if imagePath:
             path = imagePath
         else:  
@@ -328,6 +363,7 @@ class MainWindow(QtGui.QMainWindow):
                 imageFiles = sorted([x for x in allFiles if os.path.splitext(x)[-1] in extensions])        
                 self.ui.imageComboBox.clear()
                 points = []
+                annotationChanged = []
                 self.undoStacks = []
                 self.ui.coord.setText("")
                 if len(imageFiles) > 0:
@@ -356,10 +392,11 @@ class MainWindow(QtGui.QMainWindow):
                         except:
 							points.append([])
                         undoRedoStatus.append([False,False])
+                        annotationChanged.append(False)
                         self.stack = QtGui.QUndoStack(self)
                         self.undoStacks.append(self.stack)
 
-                        self.connect(self.undoStacks[-1], QtCore.SIGNAL("indexChanged(int)"), self.ui.image, QtCore.SLOT("repaint()"))
+                        #self.connect(self.undoStacks[-1], QtCore.SIGNAL("indexChanged(int)"), self.ui.image, QtCore.SLOT("repaint()"))
                         self.connect(self.undoStacks[-1], QtCore.SIGNAL("indexChanged(int)"), self.ui.zoomImage, QtCore.SLOT("repaint()"))
                         self.connect(self.undoStacks[-1], QtCore.SIGNAL("canUndoChanged(bool)"), self.undoChange)
                         self.connect(self.undoStacks[-1], QtCore.SIGNAL("canRedoChanged(bool)"), self.redoChange)
@@ -379,10 +416,12 @@ class MainWindow(QtGui.QMainWindow):
 
     def saveAnnotations(self):
         "Currently supports only saving xml files"
-        global points, path
+        global points, path, lastSavedState, annotationChanged
         filename = os.path.splitext(str(self.ui.imageComboBox.currentText()))[0]
         filePath = os.path.join(str(path), str(filename) + ".xml")
         currentIndex = self.ui.imageComboBox.currentIndex()
+        lastSavedState = self.undoStacks[currentIndex].index()
+        annotationChanged[currentIndex] = False
        
         doc = Document()
         
@@ -413,6 +452,7 @@ class MainWindow(QtGui.QMainWindow):
         f.close()
         
         self.ui.statusBar.showMessage("File saved to %s" % (filePath))
+        self.setWindowTitle("%s (%s) - pilab-annotator" % (self.ui.imageComboBox.currentText(), path))
         
     def updateZoomedImage(self, x, y):
         width = self.ui.zoomImage.width()
@@ -529,14 +569,24 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.dotUndoButton.hide()
 	
     def undo(self):
-		global currentIndex
+		global currentIndex, lastSavedState
 		self.undoStacks[currentIndex].undo()
+		if self.undoStacks[currentIndex].index() == lastSavedState:
+			annotationChanged[currentIndex] = False
+		else:
+			annotationChanged[currentIndex] = True
 		self.ui.zoomImage.repaint()
+		self.ui.image.repaint()
 		
     def redo(self):
-		global currentIndex
+		global currentIndex, lastSavedState
 		self.undoStacks[currentIndex].redo()
+		if self.undoStacks[currentIndex].index() == lastSavedState:
+			annotationChanged[currentIndex] = False
+		else:
+			annotationChanged[currentIndex] = True
 		self.ui.zoomImage.repaint()
+		self.ui.image.repaint()
 	
     def undoChange(self, b):
 		global undoRedoStatus,currentIndex
