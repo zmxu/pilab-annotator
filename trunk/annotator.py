@@ -268,18 +268,22 @@ class MainWindow(QtGui.QMainWindow):
 				self.ui.imageComboBox.setCurrentIndex(i)
 				if saveAll:
 					self.saveAnnotations()
+					event.accept()
 				else:					
 					quit_msg = "Save changes to the annotation file of \"%s\"?" % self.ui.imageComboBox.itemText(i)
 					reply = QtGui.QMessageBox.question(self, 'Quit', quit_msg, QtGui.QMessageBox.Save | 
-														QtGui.QMessageBox.SaveAll | QtGui.QMessageBox.Discard)
+														QtGui.QMessageBox.SaveAll | QtGui.QMessageBox.Discard |
+														QtGui.QMessageBox.Cancel)
 					if reply == QtGui.QMessageBox.Save:
 						self.saveAnnotations()
+						event.accept()
 					elif reply == QtGui.QMessageBox.SaveAll:
 						saveAll = True
 						self.saveAnnotations()
-					else:
-						pass
-		event.accept()
+						event.accept()
+					elif reply == QtGui.QMessageBox.Cancel:
+						event.ignore()
+						break
 				
 		#quit_msg = "Are you sure you want to exit the program?"
 		#reply = QtGui.QMessageBox.question(self, 'Message', quit_msg, QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
@@ -321,7 +325,7 @@ class MainWindow(QtGui.QMainWindow):
         self.connect(self.ui.rectangleButton, QtCore.SIGNAL("toggled(bool)"), self.handleRectButton)
         self.connect(self.ui.dotClickButton, QtCore.SIGNAL("toggled(bool)"), self.handleDotClickButton)
         self.connect(self.ui.dotDragButton, QtCore.SIGNAL("toggled(bool)"), self.handleDotDragButton)
-        self.connect(self.ui.dotUndoButton, QtCore.SIGNAL("clicked()"), self.handleDotUndoButton)
+        self.connect(self.ui.dotUndoButton, QtCore.SIGNAL("clicked()"), self.undo)
         self.connect(self.ui.undoAction, QtCore.SIGNAL("triggered()"), self.undo)
         self.connect(self.ui.redoAction, QtCore.SIGNAL("triggered()"), self.redo)
 
