@@ -2,16 +2,17 @@
 
 #annotator.py
 
-import sys, os, copy
+import sys, os, copy, time
 from PyQt4 import QtGui, QtCore
 from ui_mainwindow import Ui_mainWindow
 from xml.dom.minidom import Document, CDATASection
 from xml.dom import minidom
 import Image, ImageFilter, ImageMath, ImageChops
 
+splashTime = 3                                      #splash screen duration in seconds
 extensions = (".png",".jpg")                        # image file extensions to filter
 currentTool = "point"                               # string to describe current tool
-modes = {"point":"click", "rectangle":"", "":""}    # modes for tools
+modes = {"point":"click", "rectangle":"draw", "":""}    # modes for tools
 currentIndex = 0                                    # index of current image
 points = []                                         # point coordinates for images
 zoomPoints = []                                     # point coordinates for the zoomed image
@@ -21,6 +22,8 @@ pointWidth = 3                                      # width of the red points (i
 penColor = QtGui.QColor(255,0,0)                            # pen color for points/rectangles
 warningTimeout = 10000                              # time in miliseconds to show warning message
 indicesVisible = True                               # visibility of indices of points/rectangles
+pointsVisible = True                                # visibility of points
+rectanglesVisible = True                            # visibility of rectangles
 useSmartColor = True                                # smart coloring of the points
 currentImage = []                                   # current PIL image, filtered, and probabilities extracted
 undoRedoStatus = []									# flags for undo/redo actions to enable/disable them
@@ -89,7 +92,6 @@ class MainWindow(QtGui.QMainWindow):
 
         self.ui.dotClickButton.hide()
         self.ui.dotDragButton.hide()
-        self.ui.dotUndoButton.hide()
         self.ui.rectClickButton.hide()
         self.ui.rectDragButton.hide()
         
@@ -98,6 +100,11 @@ class MainWindow(QtGui.QMainWindow):
         self.dragIsActive = False
         if indicesVisible:
             self.ui.indicesAction.setChecked(True)
+        if pointsVisible:
+            self.ui.pointsAction.setChecked(True)
+        if rectanglesVisible:
+            self.ui.rectanglesAction.setChecked(True)
+
             
         # Force pointwidth to be odd
         if pointWidth % 2 == 0:
@@ -213,7 +220,7 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.zoomImage.paint.setPen(self.ui.zoomImage.pen)
             self.ui.zoomImage.paint.drawImage(self.ui.zoomImage.rect(), QtGui.QImage(self.ui.zoomImage.pixmap()))
             self.ui.zoomImage.paint.setPen(self.ui.image.pen)
-            if len(zoomPoints) > 0:
+            if pointsVisible and len(zoomPoints) > 0:
                 for (i,j) in zoomPoints:
                     if useSmartColor:
                         r,g,b = getSmartColor(currentImage.getpixel(((i+self.left)/zoomAmount,(j+self.up)/zoomAmount)))
@@ -250,7 +257,7 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.image.paint.begin(self.ui.image)
             self.ui.image.paint.setPen(self.ui.image.pen)
             self.ui.image.paint.drawImage(self.ui.image.rect(), QtGui.QImage(self.ui.image.pixmap()))
-            if len(points[currentIndex]) > 0:
+            if pointsVisible and len(points[currentIndex]) > 0:
                 for (i,j) in points[currentIndex]:
                     if useSmartColor:
                         r,g,b = getSmartColor(currentImage.getpixel((i,j)))
@@ -312,6 +319,8 @@ class MainWindow(QtGui.QMainWindow):
                              self.ui.navigationAction, QtCore.SLOT("setChecked(bool)"))
 
         self.connect(self.ui.indicesAction, QtCore.SIGNAL("triggered(bool)"), self.showIndices)
+        self.connect(self.ui.pointsAction, QtCore.SIGNAL("triggered(bool)"), self.showPoints)
+        self.connect(self.ui.rectanglesAction, QtCore.SIGNAL("triggered(bool)"), self.showRectangles)
         self.connect(self.ui.openAction, QtCore.SIGNAL("triggered()"), self.openImageDirectory)
         self.connect(self.ui.saveAction, QtCore.SIGNAL("triggered()"), self.saveAnnotations)
         self.connect(self.ui.imageComboBox, QtCore.SIGNAL("currentIndexChanged(QString)"), self.changeImage)
@@ -325,7 +334,10 @@ class MainWindow(QtGui.QMainWindow):
         self.connect(self.ui.rectangleButton, QtCore.SIGNAL("toggled(bool)"), self.handleRectButton)
         self.connect(self.ui.dotClickButton, QtCore.SIGNAL("toggled(bool)"), self.handleDotClickButton)
         self.connect(self.ui.dotDragButton, QtCore.SIGNAL("toggled(bool)"), self.handleDotDragButton)
-        self.connect(self.ui.dotUndoButton, QtCore.SIGNAL("clicked()"), self.undo)
+        self.connect(self.ui.rectClickButton, QtCore.SIGNAL("toggled(bool)"), self.handleRectClickButton)
+        self.connect(self.ui.rectDragButton, QtCore.SIGNAL("toggled(bool)"), self.handleRectDragButton)
+        self.connect(self.ui.undoButton, QtCore.SIGNAL("clicked()"), self.undo)
+        self.connect(self.ui.redoButton, QtCore.SIGNAL("clicked()"), self.redo)
         self.connect(self.ui.undoAction, QtCore.SIGNAL("triggered()"), self.undo)
         self.connect(self.ui.redoAction, QtCore.SIGNAL("triggered()"), self.redo)
 
@@ -515,6 +527,18 @@ class MainWindow(QtGui.QMainWindow):
         indicesVisible = check
         self.ui.image.repaint()
         self.ui.zoomImage.repaint()
+		
+    def showPoints(self, check):
+        global pointsVisible
+        pointsVisible = check
+        self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
+		
+    def showRectangles(self, check):
+        global rectanglesVisible
+        rectanglesVisible = check
+        self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
 
     def handleDotButton(self, check):
         global currentTool
@@ -557,11 +581,27 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.dotDragButton.setEnabled(False)
             self.ui.dotClickButton.setEnabled(True)
             self.ui.dotClickButton.setChecked(False)
+			
+    def handleRectClickButton(self, check):
+        if check:
+            global modes
+            modes["rectangle"] = "draw"
+            self.ui.rectClickButton.setEnabled(False)
+            self.ui.rectDragButton.setEnabled(True)
+            self.ui.rectDragButton.setChecked(False)
+            
+    def handleRectDragButton(self, check):
+        if check:
+            global modes
+            modes["rectangle"] = "drag"
+            self.ui.rectDragButton.setEnabled(False)
+            self.ui.rectClickButton.setEnabled(True)
+            self.ui.rectClickButton.setChecked(False)
 
     def showDotOptions(self):
         self.ui.dotClickButton.show()
         self.ui.dotDragButton.show()
-        self.ui.dotUndoButton.show()
+        #self.ui.dotUndoButton.show()
         self.ui.rectClickButton.hide()
         self.ui.rectDragButton.hide()
         
@@ -570,7 +610,7 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.rectDragButton.show()
         self.ui.dotClickButton.hide()
         self.ui.dotDragButton.hide()
-        self.ui.dotUndoButton.hide()
+        #self.ui.dotUndoButton.hide()
 	
     def undo(self):
 		global currentIndex, lastSavedState
@@ -595,11 +635,13 @@ class MainWindow(QtGui.QMainWindow):
     def undoChange(self, b):
 		global undoRedoStatus,currentIndex
 		self.ui.undoAction.setEnabled(b)
+		self.ui.undoButton.setEnabled(b)
 		undoRedoStatus[currentIndex][0] = b
 		
     def redoChange(self, b):
 		global undoRedoStatus,currentIndex
 		self.ui.redoAction.setEnabled(b)
+		self.ui.redoButton.setEnabled(b)
 		undoRedoStatus[currentIndex][1] = b
 
     def calculateZoomBorders(self, mouseX, mouseY):
@@ -620,7 +662,12 @@ class MainWindow(QtGui.QMainWindow):
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
+    pixmap = QtGui.QPixmap("graphics/annotator.png")
+    splash = QtGui.QSplashScreen(pixmap)
+    splash.show()
     main = MainWindow()
+    time.sleep(splashTime)
+    splash.finish(main)
     main.show()
 
     if len(sys.argv) == 2:
