@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'annotator.ui'
 #
-# Created: Mon Dec 13 23:57:06 2010
+# Created: Wed Dec 15 21:35:16 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -79,7 +79,7 @@ class Ui_mainWindow(object):
         self.dockWidgetContents_2 = QtGui.QWidget()
         self.dockWidgetContents_2.setObjectName("dockWidgetContents_2")
         self.horizontalLayoutWidget = QtGui.QWidget(self.dockWidgetContents_2)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 0, 101, 51))
+        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 0, 91, 51))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
         self.horizontalLayout = QtGui.QHBoxLayout(self.horizontalLayoutWidget)
         self.horizontalLayout.setObjectName("horizontalLayout")
@@ -91,6 +91,7 @@ class Ui_mainWindow(object):
         self.dotButton.setIcon(icon)
         self.dotButton.setIconSize(QtCore.QSize(30, 23))
         self.dotButton.setCheckable(True)
+        self.dotButton.setChecked(True)
         self.dotButton.setObjectName("dotButton")
         self.horizontalLayout.addWidget(self.dotButton)
         self.rectangleButton = QtGui.QPushButton(self.horizontalLayoutWidget)
@@ -124,7 +125,7 @@ class Ui_mainWindow(object):
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.verticalLayoutWidget_2)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.dotClickButton = QtGui.QPushButton(self.verticalLayoutWidget_2)
-        self.dotClickButton.setEnabled(False)
+        self.dotClickButton.setEnabled(True)
         self.dotClickButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.dotClickButton.setText("")
         icon2 = QtGui.QIcon()
@@ -146,7 +147,7 @@ class Ui_mainWindow(object):
         self.dotDragButton.setObjectName("dotDragButton")
         self.verticalLayout_2.addWidget(self.dotDragButton)
         self.rectClickButton = QtGui.QPushButton(self.verticalLayoutWidget_2)
-        self.rectClickButton.setEnabled(False)
+        self.rectClickButton.setEnabled(True)
         self.rectClickButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.rectClickButton.setText("")
         icon4 = QtGui.QIcon()
@@ -222,7 +223,7 @@ class Ui_mainWindow(object):
         self.dockWidgetContents_6 = QtGui.QWidget()
         self.dockWidgetContents_6.setObjectName("dockWidgetContents_6")
         self.verticalLayoutWidget = QtGui.QWidget(self.dockWidgetContents_6)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(0, 0, 151, 122))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(0, 0, 151, 121))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtGui.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setObjectName("verticalLayout")
@@ -357,6 +358,7 @@ class Ui_mainWindow(object):
         self.rectClickButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Draw", None, QtGui.QApplication.UnicodeUTF8))
         self.rectDragButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Drag", None, QtGui.QApplication.UnicodeUTF8))
         self.undoButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Undo", None, QtGui.QApplication.UnicodeUTF8))
+        self.redoButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Redo", None, QtGui.QApplication.UnicodeUTF8))
         self.zoomBox.setWindowTitle(QtGui.QApplication.translate("mainWindow", "Zoom", None, QtGui.QApplication.UnicodeUTF8))
         self.navigationBox.setWindowTitle(QtGui.QApplication.translate("mainWindow", "Navigation", None, QtGui.QApplication.UnicodeUTF8))
         self.prevButton.setToolTip(QtGui.QApplication.translate("mainWindow", "Previous image", None, QtGui.QApplication.UnicodeUTF8))

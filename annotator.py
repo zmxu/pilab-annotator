@@ -9,13 +9,15 @@ from xml.dom.minidom import Document, CDATASection
 from xml.dom import minidom
 import Image, ImageFilter, ImageMath, ImageChops
 
-splashTime = 3                                      #splash screen duration in seconds
+dashPattern = [2,2]                                 # Dash pattern for drawing rectangles in format [line length, space]
+splashTime = 3                                      # splash screen duration in seconds
 extensions = (".png",".jpg")                        # image file extensions to filter
 currentTool = "point"                               # string to describe current tool
 modes = {"point":"click", "rectangle":"draw", "":""}    # modes for tools
 currentIndex = 0                                    # index of current image
 points = []                                         # point coordinates for images
 zoomPoints = []                                     # point coordinates for the zoomed image
+rectangles = []										# rectangle coordinates
 zoomAmount = 3                                      # the image is zoomed "zoomAmount" times
 pointWidth = 3                                      # width of the red points (is to be odd)
 # penColor = QtCore.Qt.red                            # pen color for points/rectangles
@@ -75,7 +77,26 @@ class CommandAddPoint(QtGui.QUndoCommand):
 		item = self.pointList.pop()
 		if len(zoomPoints) > 0:
 			self.zoomStack.append(zoomPoints.pop())
-		#del item 		
+		#del item 	
+
+class CommandAddRect(QtGui.QUndoCommand):
+	global rectangles, zoomPoints, zoomAmount
+	def __init__(self, index, rectangle, description):
+		super(CommandAddRect, self).__init__(description)
+		self.rectList = rectangles[index]
+		self.rectangle = rectangle
+		#self.zoomStack = []
+
+	def redo(self):
+		self.rectList.append(self.rectangle)
+		#if len(self.zoomStack) > 0:
+			#zoomPoints.append(self.zoomStack.pop())
+		
+	def undo(self):
+		item = self.rectList.pop()
+		#if len(zoomPoints) > 0:
+			#self.zoomStack.append(zoomPoints.pop())
+		#del item		
     
 class MainWindow(QtGui.QMainWindow):
     def __init__(self):
@@ -87,23 +108,36 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.setupUi(self)
         self.setCentralWidget(self.ui.scrollArea)
 		
+        self.pModeButtonGroup = QtGui.QButtonGroup(self)
+        self.pModeButtonGroup.addButton(self.ui.dotClickButton)
+        self.pModeButtonGroup.addButton(self.ui.dotDragButton)
+		
+        self.rModeButtonGroup = QtGui.QButtonGroup(self)
+        self.rModeButtonGroup.addButton(self.ui.rectClickButton)
+        self.rModeButtonGroup.addButton(self.ui.rectDragButton)
+		
+        self.toolButtonGroup = QtGui.QButtonGroup(self)
+        self.toolButtonGroup.addButton(self.ui.dotButton)
+        self.toolButtonGroup.addButton(self.ui.rectangleButton)
+		
         self.undoStacks = []
         self.connectSignals()
 
-        self.ui.dotClickButton.hide()
-        self.ui.dotDragButton.hide()
-        self.ui.rectClickButton.hide()
-        self.ui.rectDragButton.hide()
+        if currentTool=="point":
+			self.ui.rectClickButton.hide()
+			self.ui.rectDragButton.hide()
+        else:
+			self.ui.dotClickButton.hide()
+			self.ui.dotDragButton.hide()
         
         self.ui.saveAction.setEnabled(False)
 
         self.dragIsActive = False
-        if indicesVisible:
-            self.ui.indicesAction.setChecked(True)
-        if pointsVisible:
-            self.ui.pointsAction.setChecked(True)
-        if rectanglesVisible:
-            self.ui.rectanglesAction.setChecked(True)
+        self.drawingRectangle = False
+		
+        self.ui.indicesAction.setChecked(indicesVisible)
+        self.ui.pointsAction.setChecked(pointsVisible)
+        self.ui.rectanglesAction.setChecked(rectanglesVisible)
 
             
         # Force pointwidth to be odd
@@ -118,6 +152,10 @@ class MainWindow(QtGui.QMainWindow):
 
         self.ui.image.paint = QtGui.QPainter()
         self.ui.image.pen = QtGui.QPen(penColor)
+		
+        self.rectPen = QtGui.QPen(penColor)
+        self.rectPen.setDashPattern(dashPattern)
+        #self.rectPen.setWidth(pointWidth-1)
         
         self.ui.coo = QtGui.QLabel()
         self.ui.statusBar.addPermanentWidget(self.ui.coo)
@@ -131,9 +169,6 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.image.mousePressEvent = self.imageMousePressEvent
         self.ui.image.mouseReleaseEvent = self.imageMouseReleaseEvent
         self.ui.image.mouseMoveEvent = self.imageMouseMoveEvent
-        
-        if currentTool == "point":
-            self.handleDotButton(True)
 
     def mainKeyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Shift and modes[currentTool] != "drag":
@@ -147,6 +182,7 @@ class MainWindow(QtGui.QMainWindow):
         if event.key() == QtCore.Qt.Key_Shift and modes[currentTool]=="tempDrag":
             if self.ui.image.pixmap() and currentTool == "point":
 				if (modes["point"] == "drag" or modes["point"] == "tempDrag") and self.dragIsActive:
+					annotationChanged[currentIndex] = True
 					self.ui.image.repaint()
 					self.dragIsActive = False
             if currentTool == "point":
@@ -174,6 +210,11 @@ class MainWindow(QtGui.QMainWindow):
                     newY = zoomAmount * j - self.up
                     if 0 <= newX <= width and 0 <= newY <= height:
                         zoomPoints.append((newX, newY))
+						
+            if self.drawingRectangle:
+				(x,y) = self.rectCoord
+				(self.tempWidth, self.tempHeight) = (abs(event.pos().x() - x), abs(event.pos().y() - y))
+				self.ui.image.repaint()
 
             self.updateZoomedImage(x,y)
 
@@ -201,17 +242,34 @@ class MainWindow(QtGui.QMainWindow):
                         self.dragIsActive = True
                         self.beforePoint = (i,j)
                         self.afterPoint = (-1,-1)
+						
+        elif self.ui.image.pixmap() and currentTool == "rectangle":
+			if modes["rectangle"] == "draw":
+				self.drawingRectangle = True
+				self.rectCoord = (event.pos().x(),event.pos().y())
 
     def imageMouseReleaseEvent(self, event):
         global points, modes, currentTool, currentIndex
         if self.ui.image.pixmap() and currentTool == "point":
             if (modes["point"] == "drag" or modes["point"] == "tempDrag") and self.dragIsActive:
+                annotationChanged[currentIndex] = True
                 self.ui.image.repaint()
                 self.dragIsActive = False
                 if self.afterPoint == (-1,-1):
 					self.afterPoint = (event.pos().x(),event.pos().y())
                 command = CommandDragPoint(currentIndex, self.beforePoint, self.afterPoint, "Drag Point")
                 self.undoStacks[currentIndex].push(command)
+				
+        if self.ui.image.pixmap() and currentTool == "rectangle":
+			if modes["rectangle"] == "draw":
+				(x,y) = self.rectCoord
+				(width, height) = (abs(event.pos().x() - x), abs(event.pos().y() - y))
+				command = CommandAddRect(currentIndex, (x,y,width,height), "Add Rectangle @(%d-%d-%d-%d)" %(x,y,width,height))
+				self.undoStacks[currentIndex].push(command)
+				annotationChanged[currentIndex] = True
+				self.ui.image.repaint()
+				if self.drawingRectangle:
+					self.drawingRectangle = False
 
     def zoomImagePaintEvent(self, event):
         global zoomAmount, zoomPoints, pointWidth
@@ -266,6 +324,14 @@ class MainWindow(QtGui.QMainWindow):
                     self.ui.image.paint.drawPoint(i,j)
                     # if indicesVisible:
                         # self.ui.image.paint.drawText(i+4,j-4, QtCore.QString.number(points[currentIndex].index((i,j))))
+            if self.drawingRectangle:
+				self.ui.image.paint.setPen(self.rectPen)
+				(x,y) = self.rectCoord
+				self.ui.image.paint.drawRect(x,y,self.tempWidth,self.tempHeight)
+            if rectanglesVisible and len(rectangles)>0:
+				for (i,j,k,m) in rectangles[currentIndex]:
+					self.ui.image.paint.setPen(self.rectPen)
+					self.ui.image.paint.drawRect(i,j,k,m)
             self.ui.image.paint.end()
 			
     def closeEvent(self, event):
@@ -368,7 +434,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def openImageDirectory(self, imagePath=None):
         global path
-        global points, annotationChanged
+        global points, rectangles, annotationChanged
         if imagePath:
             path = imagePath
         else:  
@@ -379,12 +445,14 @@ class MainWindow(QtGui.QMainWindow):
                 imageFiles = sorted([x for x in allFiles if os.path.splitext(x)[-1] in extensions])        
                 self.ui.imageComboBox.clear()
                 points = []
+                rectangles = []
                 annotationChanged = []
                 self.undoStacks = []
                 self.ui.coord.setText("")
                 if len(imageFiles) > 0:
                     for imageFile in imageFiles:
                         annotationFile = os.path.join(path, os.path.splitext(imageFile)[0] + ".xml") # @TODO: hardcoded extension!
+                        (pointOK, rectOK) = (False,False)
                         try:
                             xmldoc = minidom.parse(annotationFile)
                             objects = xmldoc.getElementsByTagName("objects")
@@ -398,15 +466,25 @@ class MainWindow(QtGui.QMainWindow):
                             		for line in lines:
                             		    (x,y) = line.split(' ')
                             		    pts.append((int(x), int(y)))
+                            		    if not pointOK:
+											pointOK = True
                             	elif object.attributes["type"].value == "rectangles":
                             		for line in lines:
-                            			#(x,y,z,t) = line.split(' ')   # @TODO: uncomment when rectangle is implemented
-                            			#rects.append((int(x), int(y), int(z), int(t)))
-										rects.append(line.split(' '))
+										(x,y,z,t) = line.split(' ')   # @TODO: uncomment when rectangle is implemented
+										rects.append((int(x), int(y), int(z), int(t)))
+										if not rectOK:
+											rectOK = True
 										
                             points.append(pts)
+                            rectangles.append(rects)
                         except:
+							pass
+							#points.append([])
+							#rectangles.append([])
+                        if not pointOK:
 							points.append([])
+                        if not rectOK:
+							rectangles.append([])
                         undoRedoStatus.append([False,False])
                         annotationChanged.append(False)
                         self.stack = QtGui.QUndoStack(self)
@@ -543,18 +621,12 @@ class MainWindow(QtGui.QMainWindow):
     def handleDotButton(self, check):
         global currentTool
         if check:
-            self.ui.dotButton.setEnabled(False)
-            self.ui.rectangleButton.setEnabled(True)
-            self.ui.rectangleButton.setChecked(False)
             currentTool = "point"
             self.showDotOptions()
             
     def handleRectButton(self, check):
         global currentTool
         if check:
-            self.ui.rectangleButton.setEnabled(False)
-            self.ui.dotButton.setEnabled(True)
-            self.ui.dotButton.setChecked(False)
             currentTool = "rectangle"
             self.showRectOptions()
 
@@ -562,46 +634,30 @@ class MainWindow(QtGui.QMainWindow):
 		global points, currentIndex
 		self.undoStack.undo()
 		self.ui.image.repaint()
-        #if len(points) > currentIndex and points[currentIndex]:
-        #    points[currentIndex].pop()
-		#	 self.ui.image.repaint()
 
     def handleDotClickButton(self, check):
         if check:
             global modes
             modes["point"] = "click"
-            self.ui.dotClickButton.setEnabled(False)
-            self.ui.dotDragButton.setEnabled(True)
-            self.ui.dotDragButton.setChecked(False)
             
     def handleDotDragButton(self, check):
         if check:
             global modes
             modes["point"] = "drag"
-            self.ui.dotDragButton.setEnabled(False)
-            self.ui.dotClickButton.setEnabled(True)
-            self.ui.dotClickButton.setChecked(False)
 			
     def handleRectClickButton(self, check):
         if check:
             global modes
             modes["rectangle"] = "draw"
-            self.ui.rectClickButton.setEnabled(False)
-            self.ui.rectDragButton.setEnabled(True)
-            self.ui.rectDragButton.setChecked(False)
             
     def handleRectDragButton(self, check):
         if check:
             global modes
             modes["rectangle"] = "drag"
-            self.ui.rectDragButton.setEnabled(False)
-            self.ui.rectClickButton.setEnabled(True)
-            self.ui.rectClickButton.setChecked(False)
 
     def showDotOptions(self):
         self.ui.dotClickButton.show()
         self.ui.dotDragButton.show()
-        #self.ui.dotUndoButton.show()
         self.ui.rectClickButton.hide()
         self.ui.rectDragButton.hide()
         
@@ -610,7 +666,6 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.rectDragButton.show()
         self.ui.dotClickButton.hide()
         self.ui.dotDragButton.hide()
-        #self.ui.dotUndoButton.hide()
 	
     def undo(self):
 		global currentIndex, lastSavedState

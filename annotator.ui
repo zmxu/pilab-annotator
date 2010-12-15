@@ -178,7 +178,7 @@
       <rect>
        <x>10</x>
        <y>0</y>
-       <width>101</width>
+       <width>91</width>
        <height>51</height>
       </rect>
      </property>
@@ -205,6 +205,9 @@
          </size>
         </property>
         <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
          <bool>true</bool>
         </property>
        </widget>
@@ -294,7 +297,7 @@
       <item>
        <widget class="QPushButton" name="dotClickButton">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="focusPolicy">
          <enum>Qt::NoFocus</enum>
@@ -352,7 +355,7 @@
       <item>
        <widget class="QPushButton" name="rectClickButton">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="focusPolicy">
          <enum>Qt::NoFocus</enum>
@@ -435,6 +438,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="redoButton">
+        <property name="toolTip">
+         <string>Redo</string>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -547,7 +553,7 @@
        <x>0</x>
        <y>0</y>
        <width>151</width>
-       <height>122</height>
+       <height>121</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
