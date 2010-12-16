@@ -84,6 +84,31 @@ class CommandDragRect(QtGui.QUndoCommand):
 			#	self.zoomStack.append(zoomPoints.pop())
 		except ValueError:
 			pass
+			
+class CommandResizeRect(QtGui.QUndoCommand):
+	global rectangles, zoomAmount
+	def __init__(self, index, before, after, description):
+		super(CommandResizeRect, self).__init__(description)
+		self.rectList = rectangles[index]
+		self.rectangle1 = before
+		self.rectangle2 = after
+		#self.zoomStack = []
+
+	def redo(self):
+		try:
+			self.rectList[self.rectList.index(self.rectangle1)] = self.rectangle2
+			#if len(self.zoomStack) > 0:
+			#	zoomPoints.append(self.zoomStack.pop())
+		except ValueError:
+			pass
+		
+	def undo(self):
+		try:
+			self.rectList[self.rectList.index(self.rectangle2)] = self.rectangle1
+			#if len(zoomPoints) > 0:
+			#	self.zoomStack.append(zoomPoints.pop())
+		except ValueError:
+			pass
 
 class CommandAddPoint(QtGui.QUndoCommand):
 	global points, zoomPoints, zoomAmount
@@ -159,6 +184,9 @@ class MainWindow(QtGui.QMainWindow):
 
         self.dragIsActive = False
         self.drawingRectangle = False
+        self.resizeReady = False
+        self.resizeIsActive = False
+        self.resizeType = ""
 		
         self.ui.indicesAction.setChecked(indicesVisible)
         self.ui.pointsAction.setChecked(pointsVisible)
@@ -225,12 +253,120 @@ class MainWindow(QtGui.QMainWindow):
 					self.ui.image.repaint()
             elif currentTool == "rectangle":
 				(i,j,k,m) = self.beforeRect
-				deltaX,deltaY = event.pos().x()-self.rectDragPoint.x(),event.pos().y()-self.rectDragPoint.y()
+				deltaX,deltaY = x-self.rectDragPoint.x(),y-self.rectDragPoint.y()
 				newX,newY = i+deltaX, j+deltaY
 				if 0 <= x < self.ui.image.width() and 0 <= y < self.ui.image.height() \
 					and 0 <= newX < self.ui.image.width()-k and 0 <= newY < self.ui.image.height()-m:
 						rectangles[currentIndex][self.rectToDrag] = (newX,newY,k,m)
 						self.ui.image.repaint()
+						
+        elif self.resizeIsActive:
+			(i,j,w,h) = rectangles[currentIndex][self.rectToResize]
+			if self.resizeType == "upleft":
+				deltaX,deltaY = x-i, y-j
+				newX, newY = x,y
+				newWidth, newHeight = w-deltaX,h-deltaY
+				#rectangles[currentIndex][self.rectToResize] = (x,y,w-deltaX,h-deltaY)
+			elif self.resizeType == "downleft":
+				deltaX,deltaY = x-i, y-j-h
+				newX, newY = i+deltaX, j
+				newWidth, newHeight = w-deltaX,h+deltaY
+				#rectangles[currentIndex][self.rectToResize] = (i+deltaX,j,w-deltaX,h+deltaY)
+			elif self.resizeType == "upright":
+				deltaX,deltaY = x-i-w, y-j
+				newX, newY = i,j+deltaY
+				newWidth, newHeight = w+deltaX,h-deltaY
+				#rectangles[currentIndex][self.rectToResize] = (i,j+deltaY,w+deltaX,h-deltaY)
+			elif self.resizeType == "downright":
+				deltaX,deltaY = x-i-w, y-j-h
+				newX, newY = i,j
+				newWidth, newHeight = w+deltaX,h+deltaY
+				#rectangles[currentIndex][self.rectToResize] = (i,j,w+deltaX,h+deltaY)
+			elif self.resizeType == "left":
+				deltaX = x-i
+				newX, newY = i+deltaX,j
+				newWidth, newHeight = w-deltaX,h
+				#rectangles[currentIndex][self.rectToResize] = (i+deltaX,j,w-deltaX,h)
+			elif self.resizeType == "right":
+				deltaX = x-i-w
+				newX, newY = i,j
+				newWidth, newHeight = w+deltaX,h
+				#rectangles[currentIndex][self.rectToResize] = (i,j,w+deltaX,h)
+			elif self.resizeType == "up":
+				deltaY = y-j
+				newX, newY = i,j+deltaY
+				newWidth, newHeight = w,h-deltaY
+				#rectangles[currentIndex][self.rectToResize] = (i,j+deltaY,w,h-deltaY)
+			elif self.resizeType == "down":
+				deltaY = y-j-h
+				newX, newY = i,j
+				newWidth, newHeight = w,h+deltaY
+				#rectangles[currentIndex][self.rectToResize] = (i,j,w,h+deltaY)
+			#if newWidth < 0:
+			#	newX -= newWidth
+			#	newWidth = abs(newWidth)
+			#if newHeight < 0:
+			#	newY += newHeight
+			#	newHeight = abs(newHeight)
+			rectangles[currentIndex][self.rectToResize] = (newX,newY,newWidth,newHeight)
+			self.ui.image.repaint()
+						
+        elif currentTool == "rectangle" and modes[currentTool] != "drag" and modes[currentTool] != "tempDrag":
+			self.resizeReady = False
+			for (i,j,k,m) in rectangles[currentIndex]:
+				if abs(x-i)<=2:
+					if abs(y-j)<=2:   #upper-left corner of rectangle
+						self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeFDiagCursor))
+						self.resizeType = "upleft"
+						self.rectToResize = rectangles[currentIndex].index((i,j,k,m))
+						self.resizeReady = True
+						break
+					elif abs(y-j-m)<=2:   #lower-left corner of rectangle
+						self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeBDiagCursor))
+						self.resizeType = "downleft"
+						self.rectToResize = rectangles[currentIndex].index((i,j,k,m))
+						self.resizeReady = True
+						break
+					elif -2<=y-j<=m+2:   #left side of rectangle
+						self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeHorCursor))
+						self.resizeType = "left"
+						self.rectToResize = rectangles[currentIndex].index((i,j,k,m))
+						self.resizeReady = True
+						break
+				elif abs(x-i-k)<=2:
+					if abs(y-j)<=2:   #upper-right corner of rectangle
+						self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeBDiagCursor))
+						self.resizeType = "upright"
+						self.rectToResize = rectangles[currentIndex].index((i,j,k,m))
+						self.resizeReady = True
+						break
+					elif abs(y-j-m)<=2:   #lower-right corner of rectangle
+						self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeFDiagCursor))
+						self.resizeType = "downright"
+						self.rectToResize = rectangles[currentIndex].index((i,j,k,m))
+						self.resizeReady = True
+						break
+					elif -2<=y-j<=m+2:   #right side of rectangle
+						self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeHorCursor))
+						self.resizeType = "right"
+						self.rectToResize = rectangles[currentIndex].index((i,j,k,m))
+						self.resizeReady = True
+						break
+				elif abs(y-j)<=2 and -2<=x-i<=k+2:   #upper side of rectangle
+					self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeVerCursor))
+					self.resizeType = "up"
+					self.rectToResize = rectangles[currentIndex].index((i,j,k,m))
+					self.resizeReady = True
+					break
+				elif abs(y-j-m)<=2 and -2<=x-i<=k+2:   #lower side of the rectangle
+					self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeVerCursor))
+					self.resizeType = "down"
+					self.rectToResize = rectangles[currentIndex].index((i,j,k,m))
+					self.resizeReady = True
+					break
+			if not self.resizeReady:
+				if self.ui.image.cursor().shape() != QtCore.Qt.CrossCursor:
+					self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
 				
         if self.ui.image.pixmap():
             height, width = self.ui.zoomImage.width(), self.ui.zoomImage.height()
@@ -280,12 +416,17 @@ class MainWindow(QtGui.QMainWindow):
 						
         elif self.ui.image.pixmap() and currentTool == "rectangle":
 			if modes["rectangle"] == "draw":
-				self.drawingRectangle = True
+				if self.resizeReady:
+					self.resizeIsActive = True
+					self.beforeRect = rectangles[currentIndex][self.rectToResize]
+				else:
+					self.drawingRectangle = True
 				self.rectCoord = (x,y)
 			elif modes["rectangle"] == "drag" or modes["rectangle"] == "tempDrag":
 				self.dragIsActive = False
 				for (i,j,k,m) in rectangles[currentIndex]:
-					if ((-2<=x-i<=2)or(k-2<=x-i<=k+2) and y-j<=m) or((-2<=y-j<=2)or(m-2<=y-j<=m+2) and x-i<=k):
+					if ((abs(x-i)<=2 or abs(x-i-k)<=2) and -2<=y-j<=m+2) or ((abs(y-j)<=2 or abs(y-j-m)<=2) and -2<=x-i<=k+2):
+						#print "x:%d y:%d i:%d j:%d w:%d h:%d" % (x,y,i,j,k+i,m+j)
 						self.rectToDrag = rectangles[currentIndex].index((i,j,k,m))
 						self.rectDragPoint = event.pos()
 						self.dragIsActive = True
@@ -304,23 +445,38 @@ class MainWindow(QtGui.QMainWindow):
                 command = CommandDragPoint(currentIndex, self.beforePoint, self.afterPoint, "Drag Point")
                 self.undoStacks[currentIndex].push(command)
 				
-        if self.ui.image.pixmap() and currentTool == "rectangle":
+        elif self.ui.image.pixmap() and currentTool == "rectangle":
 			if modes["rectangle"] == "draw":
-				(x,y) = self.rectCoord
-				width, height = (event.pos().x() - x), (event.pos().y() - y)
-				if width != 0 and height != 0:	
-					if width < 0:
-						width = abs(width)
-						x = event.pos().x()
-					if height < 0:
-						height = abs(height)
-						y = event.pos().y()
-					command = CommandAddRect(currentIndex, (x,y,width,height), "Add Rectangle @(%d-%d-%d-%d)" %(x,y,width,height))
+				if self.resizeIsActive:
+					(i,j,w,h) = rectangles[currentIndex][self.rectToResize]
+					if w < 0:
+						i += w
+						w = abs(w)
+					if h < 0:
+						j += h
+						h = abs(h)
+					rectangles[currentIndex][self.rectToResize] = self.afterRect = (i,j,w,h)
+					command = CommandResizeRect(currentIndex, self.beforeRect, self.afterRect, "Drag Rectangle")
 					self.undoStacks[currentIndex].push(command)
+					self.resizeIsActive = False
 					annotationChanged[currentIndex] = True
-				if self.drawingRectangle:
-					self.drawingRectangle = False
 					self.ui.image.repaint()
+				else:
+					(x,y) = self.rectCoord
+					width, height = (event.pos().x() - x), (event.pos().y() - y)
+					if width != 0 and height != 0:	
+						if width < 0:
+							width = abs(width)
+							x = event.pos().x()
+						if height < 0:
+							height = abs(height)
+							y = event.pos().y()
+						command = CommandAddRect(currentIndex, (x,y,width,height), "Add Rectangle @(%d-%d-%d-%d)" %(x,y,width,height))
+						self.undoStacks[currentIndex].push(command)
+						annotationChanged[currentIndex] = True
+					if self.drawingRectangle:
+						self.drawingRectangle = False
+						self.ui.image.repaint()
 			if (modes["rectangle"] == "drag" or modes["rectangle"] == "tempDrag") and self.dragIsActive:
 				annotationChanged[currentIndex] = True
 				self.ui.image.repaint()
@@ -525,6 +681,8 @@ class MainWindow(QtGui.QMainWindow):
 						else:
 							pts = []
 							rects = []
+							pointsOK = True
+							rectsOK = True
 
 							for object in objects:
 								lines = object.childNodes[1].data.splitlines()
@@ -535,15 +693,19 @@ class MainWindow(QtGui.QMainWindow):
 											pts.append((int(x), int(y)))
 									except:
 										points.append([])
+										pointsOK = False
 								elif object.attributes["type"].value == "rectangles":
 									try:
 										for line in lines:
 											(x,y,z,t) = line.split(' ')   # @TODO: uncomment when rectangle is implemented
 											rects.append((int(x), int(y), int(z), int(t)))	
 									except:
-										rectangles.append([])											
-							points.append(pts)
-							rectangles.append(rects)
+										rectangles.append([])
+										rectsOK = False
+							if pointsOK:
+								points.append(pts)
+							if rectsOK:
+								rectangles.append(rects)
 
 						undoRedoStatus.append([False,False])
 						annotationChanged.append(False)
