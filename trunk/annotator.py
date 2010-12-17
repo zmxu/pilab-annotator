@@ -230,6 +230,7 @@ class MainWindow(QtGui.QMainWindow):
             if currentTool == "rectangle":
                 self.ui.rectDragButton.setChecked(True)
             modes[currentTool] = "tempDrag"
+            self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeAllCursor))
 
     def mainKeyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_Shift and modes[currentTool]=="tempDrag":
@@ -242,6 +243,7 @@ class MainWindow(QtGui.QMainWindow):
                 self.ui.dotClickButton.setChecked(True)
             if currentTool == "rectangle":
                 self.ui.rectClickButton.setChecked(True)
+            self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
 
     def imageMouseMoveEvent(self, event):
         global zoomPoints, points, rectangles, currentIndex
@@ -386,8 +388,10 @@ class MainWindow(QtGui.QMainWindow):
 				(x,y) = self.rectCoord
 				(self.tempWidth, self.tempHeight) = ((event.pos().x() - x), (event.pos().y() - y))
 				self.ui.image.repaint()
-
-            self.updateZoomedImage(x,y)
+				self.updateZoomedImage(event.pos().x(),event.pos().y())
+				self.ui.zoomImage.repaint()
+            else:
+				self.updateZoomedImage(x,y)
 
     def imageMousePressEvent(self, event):
         global zoomPoints, points, modes, currentTool, currentIndex
@@ -548,9 +552,10 @@ class MainWindow(QtGui.QMainWindow):
 				(x,y) = self.rectCoord
 				self.ui.image.paint.drawRect(x,y,self.tempWidth,self.tempHeight)
             if rectanglesVisible and len(rectangles)>0:
-				for (i,j,k,m) in rectangles[currentIndex]:
+				for index,(i,j,k,m) in enumerate(rectangles[currentIndex]):
 					self.ui.image.paint.setPen(self.rectPen)
 					self.ui.image.paint.drawRect(i,j,k,m)
+					self.ui.image.paint.drawText(i+3,j+12, QtCore.QString.number(index))
             self.ui.image.paint.end()
 			
     def closeEvent(self, event):
@@ -868,21 +873,25 @@ class MainWindow(QtGui.QMainWindow):
         if check:
             global modes
             modes["point"] = "click"
+            self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
             
     def handleDotDragButton(self, check):
         if check:
             global modes
             modes["point"] = "drag"
+            self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeAllCursor))
 			
     def handleRectClickButton(self, check):
         if check:
             global modes
             modes["rectangle"] = "draw"
+            self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
             
     def handleRectDragButton(self, check):
         if check:
             global modes
             modes["rectangle"] = "drag"
+            self.ui.image.setCursor(QtGui.QCursor(QtCore.Qt.SizeAllCursor))
 
     def showDotOptions(self):
         self.ui.dotClickButton.show()
