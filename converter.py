@@ -152,10 +152,32 @@ def asf2xml(asfFile, xmlFile=None):
 			xml.write(doc.toprettyxml(indent="  ", encoding="UTF-8"))
 			xml.close()
 
-if __name__ == "__main__":
-    if len(sys.argv) == 4:
+def rect2xml(rectFile, xmlFile=None):
+	if xmlFile == None:
+		xmlFile = rectFile[:-5] + ".xml"
+	
+	try:
+		f = open(rectFile, 'r')
+		fileContent = f.readlines()
+	except IOError:
+		print "File: %s not found.\n" % rectFile
+	
+	else:
+		rects = []
+		for line in fileContent:
+			if line != "":
+				rects.append(line.split())
+		f.close()
 		
-		(operation,input,output) = (sys.argv[1],sys.argv[2],sys.argv[3])
+
+if __name__ == "__main__":
+	if len(sys.argv) < 3:
+		print "Please provide at least 3 arguments"
+	else:	
+		(operation,input,output) = (sys.argv[1],sys.argv[2],None)
+		if len(sys.argv) == 4:
+			output = sys.argv[3];
+		
 		
 		if operation == "pts2xml":
 			pts2xml(input,output)
@@ -165,3 +187,6 @@ if __name__ == "__main__":
 		
 		elif operation == "asf2xml":
 			asf2xml(input,output)
+		
+		elif operation == "rect2xml":
+			rect2xml(input,output)
