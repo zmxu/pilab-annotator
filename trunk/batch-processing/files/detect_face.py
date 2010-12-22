@@ -15,7 +15,7 @@ import cv
 # min_size=<minimum possible face size
 
 min_size = (20, 20)
-image_scale = 2
+image_scale = 1
 haar_scale = 1.2
 min_neighbors = 2
 haar_flags = 0
