@@ -60,7 +60,7 @@ def xml2pts(xmlFile, ptsFile=None):
 		objects = xmldoc.getElementsByTagName("objects")
 		
 	except IOError:
-		print "File: %s not found.\n" % asfFile
+		print "File: %s not found.\n" % xmlFile
 		
 	else:
 		pts = []
@@ -155,6 +155,9 @@ def asf2xml(asfFile, xmlFile=None):
 def rect2xml(rectFile, xmlFile=None):
 	if xmlFile == None:
 		xmlFile = rectFile[:-5] + ".xml"
+		
+	rects = []
+	pts = []
 	
 	try:
 		f = open(rectFile, 'r')
@@ -166,8 +169,61 @@ def rect2xml(rectFile, xmlFile=None):
 		rects = []
 		for line in fileContent:
 			if line != "":
-				rects.append(line.split())
+				x,y,w,h = line.split()
+				rects.append((float(x),float(y),float(w),float(h)))
 		f.close()
+		
+	try:
+		xmldoc = minidom.parse(xmlFile)
+		objects = xmldoc.getElementsByTagName("objects")
+		
+	except IOError:
+		pass	
+	else:
+		pts = []
+		for object in objects:
+			lines = object.childNodes[1].data.splitlines()
+			if object.attributes["type"].value == "points":
+				for line in lines:
+					x,y = line.split(' ')
+					pts.append((float(x),float(y)))
+		del xmldoc
+		os.remove(xmlFile)					
+					
+	doc = Document()
+	
+	annotation = doc.createElement("annotation")
+	doc.appendChild(annotation)
+	
+	objects = doc.createElement("objects")
+	objects.setAttribute("type", "points")
+	objects.setAttribute("count", "%.0f" % len(pts))
+	annotation.appendChild(objects)
+	
+	text = ""
+	for (x,y) in pts:
+		text += "%.0f %.0f\n" % (x,y)
+	if text == "":
+		text = "\n"
+	cDataSection = doc.createCDATASection(text)
+	objects.appendChild(cDataSection)
+
+	objects = doc.createElement("objects")
+	objects.setAttribute("type", "rectangles")
+	objects.setAttribute("count", "%.0f" % len(rects))
+	annotation.appendChild(objects)
+	
+	text = ""
+	for (x,y,w,h) in rects:
+		text += "%.0f %.0f %.0f %.0f\n" % (x,y,w,h)
+	if text == "":
+		text = "\n"
+	cDataSection = doc.createCDATASection(text)
+	objects.appendChild(cDataSection)
+
+	xml = open(xmlFile, 'w')
+	xml.write(doc.toprettyxml(indent="  ", encoding="UTF-8"))
+	xml.close()
 		
 
 if __name__ == "__main__":
@@ -177,7 +233,6 @@ if __name__ == "__main__":
 		(operation,input,output) = (sys.argv[1],sys.argv[2],None)
 		if len(sys.argv) == 4:
 			output = sys.argv[3];
-		
 		
 		if operation == "pts2xml":
 			pts2xml(input,output)
