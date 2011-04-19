@@ -1,10 +1,10 @@
 REM echo off
 set haarcascade=files\haarcascade_frontalface_alt2.xml
-set model=files\ismail.amf
-set shape_model=files\ismail.xml
+set model=files\buhmap.amf
+set shape_model=files\buhmap.xml
 set fit=files\fit_facial_points.exe
 
-set input_folder=test-images\
+set input_folder=test\
 set image_extension=.jpg
 set point_extension=.pts
 

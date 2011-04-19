@@ -1,7 +1,7 @@
 set haarcascade=files\haarcascade_frontalface_alt2.xml
 set python_script=files\detect_face.py
 
-set input_folder=test-images\
+set input_folder=buhmap\
 set image_extension=.png
 set rectange_extension=.rect
 

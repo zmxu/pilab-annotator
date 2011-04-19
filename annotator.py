@@ -1,13 +1,32 @@
 #! /usr/bin/python
 
-#annotator.py
+"""
+Pinotator (Pilab-annotator)
 
-import sys, os, copy, time
+A tool for annotating points and rectangles in images. 
+It also helps to convert between asf and pts files.
+
+http://code.google.com/p/pilab-annotator/
+
+System Support
+    - On Windows, it works with full functionality
+    - On Linux/BSD, the annotator works with full functionality 
+        but the additional batch converters do not work.
+
+Requirements:
+    - PyQt4
+    - PIL (optional)
+
+@author: Ismail Ari and Yunus Acikoz
+"""
+
+
+import sys, os, time
 from PyQt4 import QtGui, QtCore
 from ui_mainwindow import Ui_mainWindow
-from xml.dom.minidom import Document, CDATASection
+from xml.dom.minidom import Document
 from xml.dom import minidom
-import Image, ImageFilter, ImageMath, ImageChops
+import Image, ImageFilter, ImageChops
 
 dashPattern = [2,2]                                 # Dash pattern for drawing rectangles in format [line length, space]
 splashTime = 3                                      # splash screen duration in seconds
@@ -28,9 +47,9 @@ pointsVisible = True                                # visibility of points
 rectanglesVisible = True                            # visibility of rectangles
 useSmartColor = True                                # smart coloring of the points
 currentImage = []                                   # current PIL image, filtered, and probabilities extracted
-undoRedoStatus = []									# flags for undo/redo actions to enable/disable them
-annotationChanged = []								# flags for images to determine changes in annotation
-lastSavedState = 0									# QUndoStack index for the last state that is saved
+undoRedoStatus = []                                 # flags for undo/redo actions to enable/disable them
+annotationChanged = []                              # flags for images to determine changes in annotation
+lastSavedState = 0                                  # QUndoStack index for the last state that is saved
 
 def getSmartColor(intensity):
     return min(15*intensity,255), 50, 100
@@ -124,7 +143,7 @@ class CommandAddPoint(QtGui.QUndoCommand):
 			zoomPoints.append(self.zoomStack.pop())
 		
 	def undo(self):
-		item = self.pointList.pop()
+		self.pointList.pop()
 		if len(zoomPoints) > 0:
 			self.zoomStack.append(zoomPoints.pop())
 		#del item 	
@@ -143,7 +162,7 @@ class CommandAddRect(QtGui.QUndoCommand):
 			#zoomPoints.append(self.zoomStack.pop())
 		
 	def undo(self):
-		item = self.rectList.pop()
+		self.rectList.pop()
 		#if len(zoomPoints) > 0:
 			#self.zoomStack.append(zoomPoints.pop())
 		#del item		
@@ -632,29 +651,53 @@ class MainWindow(QtGui.QMainWindow):
         self.connect(self.ui.redoAction, QtCore.SIGNAL("triggered()"), self.redo)
 
     def previousImage(self):
+        global zoomPoints
         index = self.ui.imageComboBox.currentIndex() - 1
         if index < 0:
             index = 0
         self.ui.imageComboBox.setCurrentIndex(index)
+        zoomPoints = []
+        self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
     def nextImage(self):
+        global zoomPoints
         index = self.ui.imageComboBox.currentIndex() + 1
         if index >= self.ui.imageComboBox.count():
             index = self.ui.imageComboBox.count() - 1
         self.ui.imageComboBox.setCurrentIndex(index)
+        zoomPoints = []
+        self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
     def plusTenImage(self):
+        global zoomPoints
         index = self.ui.imageComboBox.currentIndex() + 10
         if index >= self.ui.imageComboBox.count():
             index = self.ui.imageComboBox.count() - 1
         self.ui.imageComboBox.setCurrentIndex(index)
+        zoomPoints = []
+        self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
     def minusTenImage(self):
+        global zoomPoints
         index = self.ui.imageComboBox.currentIndex() - 10
         if index < 0:
             index = 0
         self.ui.imageComboBox.setCurrentIndex(index)
+        zoomPoints = []
+        self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
     def lastImage(self):
+        global zoomPoints
         self.ui.imageComboBox.setCurrentIndex(self.ui.imageComboBox.count() - 1)
+        zoomPoints = []
+        self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
     def firstImage(self):
+        global zoomPoints
         self.ui.imageComboBox.setCurrentIndex(0)
+        zoomPoints = []
+        self.ui.image.repaint()
+        self.ui.zoomImage.repaint()
 
     def openImageDirectory(self, imagePath=None):
         global path
